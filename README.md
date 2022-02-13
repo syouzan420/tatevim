@@ -20,3 +20,4 @@ t に續いて Enter で 縦書きモードに移行し
 最新のVIMでないと charcol関数がないことによりエラーが出ます  
 このプラグインを使ふ場合は VIMを最新にすることをお勧めします  
 プラグインの使用は tate.vim を フォルダ .vim の plugin ディレクトリに入れてください  
+![Screenshot from 2022-02-13 13-57-06](https://user-images.githubusercontent.com/12661196/153739536-d664fd0b-9aa9-4e8b-950c-cec34119c189.png)
