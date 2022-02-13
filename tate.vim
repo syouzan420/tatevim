@@ -41,15 +41,15 @@ function! s:ShowTate(lst,w,pl,px,scrl,msc)
 endfunction
 
 function! s:MoveCursor()
-  let fin = g:fin
-  let lst = g:lst
-  let w = g:w
-  let cy = g:cy
-  let cx = g:cx
-  let pl = g:pl
-  let px = g:px
-  let scrl = g:scrl
-  let msc = g:msc
+  let fin = s:fin
+  let lst = s:lst
+  let w = s:w
+  let cy = s:cy
+  let cx = s:cx
+  let pl = s:pl
+  let px = s:px
+  let scrl = s:scrl
+  let msc = s:msc
   let cpos = getcurpos('.')
   let ncy = cpos[1]
   let ncx = cpos[2]
@@ -61,12 +61,14 @@ function! s:MoveCursor()
     let [cy,cx] = s:CursorSet(fin,pl,px,scrl,msc)
   elseif cy<ncy
     let px = px + 1
-    if ncy==g:h
+    if ncy==s:h
       let px = px - 1
     endif
     let [cy,cx] = s:CursorSet(fin,pl,px,scrl,msc) 
   elseif cx>ncx
-    let pl = pl + 1
+    if ncx > 2
+      let pl = pl + 1
+    endif
     if scrl>0 && ncx<10
       let scrl = scrl - 1
       let [fin,cy,cx] = s:ShowTate(lst,w,pl,px,scrl,msc)
@@ -114,6 +116,7 @@ endfunction
 function! s:FitToWindow(ls,wi,sc)
   let mcs = len(a:ls[0])
   let res = mapnew(a:ls,"s:FitElmToWindow(v:val,mcs,a:wi,a:sc)")
+  call map(res,"'  ' . v:val")
   return res
 endfunction
 
@@ -237,8 +240,8 @@ function! s:AddSpaces(s,m)
 endfunction
 
 function! s:TateStart()
-  let g:h = winheight('%')  " ウインドウの高さ
-  let g:w = winwidth('%')   " ウインドウの幅
+  let s:h = winheight('%')  " ウインドウの高さ
+  let s:w = winwidth('%')   " ウインドウの幅
   augroup Tate 
     nunmap t
     nnoremap q :Tateq
@@ -247,25 +250,25 @@ function! s:TateStart()
     set nofoldenable
     let y = line('.') " 現在のカーソルがある行
     let x = charcol('.') " 現在のカーソルの位置（横方向)までにあるキャラクタ数
-    call s:CreateField(g:h) " 新しいバッファを作成し空の行を作って元のバッファにもどる
+    call s:CreateField(s:h) " 新しいバッファを作成し空の行を作って元のバッファにもどる
     let bf = getline(1,line("$"))  " 全行のリストを取得
-    let g:bf = mapnew(bf,"(v:val) . ' '")  " リストの最後尾にスペースを追加
+    let s:bf = mapnew(bf,"(v:val) . ' '")  " リストの最後尾にスペースを追加
     bn!
-    let [g:nls,g:lst,g:fin,g:cy,g:cx,g:pl,g:px,g:scrl,g:msc,g:oln] = s:ChangeToTate(g:bf,x,y,g:w,g:h)
+    let [s:nls,s:lst,s:fin,s:cy,s:cx,s:pl,s:px,s:scrl,s:msc,s:oln] = s:ChangeToTate(s:bf,x,y,s:w,s:h)
     autocmd!
     autocmd InsertLeave * call feedkeys("\<right>",'n')
-    autocmd TextChangedI * let [g:bf,g:lst,g:fin,g:pl,g:px,g:cy,g:cx,g:scrl,g:msc,g:oln] = s:UpdateText()
-    autocmd CursorMoved * let [g:fin,g:cy,g:cx,g:pl,g:px,g:scrl] = s:MoveCursor()
+    autocmd TextChangedI * let [s:bf,s:lst,s:fin,s:pl,s:px,s:cy,s:cx,s:scrl,s:msc,s:oln] = s:UpdateText()
+    autocmd CursorMoved * let [s:fin,s:cy,s:cx,s:pl,s:px,s:scrl] = s:MoveCursor()
   augroup END
 
 endfunction
 
 function! s:ConvPos(h,pl,px,oln)
   let ml = a:h - 2  " max length
-  let y = g:oln[a:pl-1]
+  let y = s:oln[a:pl-1]
   let i = 1
   let x = a:px  
-  while g:oln[a:pl-1-i]==y && (a:pl-i)>0 
+  while s:oln[a:pl-1-i]==y && (a:pl-i)>0 
     let x = x + ml
     let i = i + 1
     if (a:pl-1-i)<0
@@ -276,13 +279,13 @@ function! s:ConvPos(h,pl,px,oln)
 endfunction
 
 function! s:UpdateText()
-  let fin = g:fin
-  let bf = g:bf
-  let pl = g:pl
-  let px = g:px
-  let oln = g:oln
-  let w = g:w
-  let h = g:h
+  let fin = s:fin
+  let bf = s:bf
+  let pl = s:pl
+  let px = s:px
+  let oln = s:oln
+  let w = s:w
+  let h = s:h
   let icr = px!=line('.')-1   " 改行が入力されたかどうか
   let [y,x] = s:ConvPos(h,pl,px,oln)
   if icr
@@ -352,7 +355,7 @@ function! s:TateChange()
   bd!
   normal 1G
   normal dG
-  call append(0,g:bf)
+  call append(0,s:bf)
   nnoremap t :Tate
 endfunction
 
