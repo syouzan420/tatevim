@@ -4,6 +4,10 @@ function! s:ChangeToTate(bf,x,y,w,h)
   return [nls,lst,fin,cy,cx,pl,px,scrl,msc,oln]
 endfunction
 
+" the list taken is -- nls which is wrapped lined text list from original text
+" 最初のリスト（元のバッファの行をリストにしたもの）を表示高さ分の長さで分割したリストを取る
+" それに必要ならばスペースを加へて 全リスト要素を同じ長さ（キャラクタ數）にし
+" すべての要素の先頭からそれぞれ取って合はせ できた要素を逆から並べて lst をつくる
 function! s:ConvertList(nls,pl,px,w)
   let lst = s:ChangeList(s:AddSpacesToList(a:nls))
   let mxl = len(a:nls)     " 行数
@@ -239,30 +243,6 @@ function! s:AddSpaces(s,m)
   return (a:s . sp)
 endfunction
 
-function! s:TateStart()
-  let s:h = winheight('%')  " ウインドウの高さ
-  let s:w = winwidth('%')   " ウインドウの幅
-  augroup Tate 
-    nunmap t
-    nnoremap q :Tateq
-    nnoremap w :Tatec
-    write 
-    set nofoldenable
-    let y = line('.') " 現在のカーソルがある行
-    let x = charcol('.') " 現在のカーソルの位置（横方向)までにあるキャラクタ数
-    call s:CreateField(s:h) " 新しいバッファを作成し空の行を作って元のバッファにもどる
-    let bf = getline(1,line("$"))  " 全行のリストを取得
-    let s:bf = mapnew(bf,"(v:val) . ' '")  " リストの最後尾にスペースを追加
-    bn!
-    let [s:nls,s:lst,s:fin,s:cy,s:cx,s:pl,s:px,s:scrl,s:msc,s:oln] = s:ChangeToTate(s:bf,x,y,s:w,s:h)
-    autocmd!
-    autocmd InsertLeave * call feedkeys("\<right>",'n')
-    autocmd TextChangedI * let [s:bf,s:lst,s:fin,s:pl,s:px,s:cy,s:cx,s:scrl,s:msc,s:oln] = s:UpdateText()
-    autocmd CursorMoved * let [s:fin,s:cy,s:cx,s:pl,s:px,s:scrl] = s:MoveCursor()
-  augroup END
-
-endfunction
-
 function! s:ConvPos(h,pl,px,oln)
   let ml = a:h - 2  " max length
   let y = s:oln[a:pl-1]
@@ -348,14 +328,39 @@ function! s:UpdateText()
   return [bf,lst,fin,pl,px,cy,cx,scrl,msc,oln]
 endfunction
 
+function! s:TateStart()
+  let s:h = winheight('%')  " height of the window 
+  let s:w = winwidth('%')   " height of the window (some of the string display width) 
+  augroup Tate 
+    " unmap t key and define q key and w key for command :Tateq and :Tatec
+    nunmap t
+    nnoremap q :Tateq
+    nnoremap w :Tatec
+    write                   " write the current buffer to the file 
+    set nofoldenable        " set off the script fold
+    let y = line('.')       " the current line which is on the cursor 
+    let x = charcol('.')    " 現在のカーソルの位置（横方向)までにあるキャラクタ数
+    call s:CreateField(s:h) " 新しいバッファを作成し空の行を作って元のバッファにもどる
+    let bf = getline(1,line("$"))  " 全行のリストを取得
+    let s:bf = mapnew(bf,"(v:val) . ' '")  " リストの最後尾にスペースを追加
+    bn!
+    let [s:nls,s:lst,s:fin,s:cy,s:cx,s:pl,s:px,s:scrl,s:msc,s:oln] = s:ChangeToTate(s:bf,x,y,s:w,s:h)
+    autocmd!
+    autocmd InsertLeave * call feedkeys("\<right>",'n')
+    autocmd TextChangedI * let [s:bf,s:lst,s:fin,s:pl,s:px,s:cy,s:cx,s:scrl,s:msc,s:oln] = s:UpdateText()
+    autocmd CursorMoved * let [s:fin,s:cy,s:cx,s:pl,s:px,s:scrl] = s:MoveCursor()
+  augroup END
+endfunction
+
 function! s:TateChange()
   augroup Tate 
     autocmd!
   augroup END
-  bd!
+  bd!                     " return the original buffer
+  " clear the buffer
   normal 1G
-  normal dG
-  call append(0,s:bf)
+  normal dG 
+  call append(0,s:bf)     " append new data
   nnoremap t :Tate
 endfunction
 
