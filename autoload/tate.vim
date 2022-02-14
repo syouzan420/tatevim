@@ -15,14 +15,14 @@ endfunction
 function! s:ConvertList(nls,pl,px,w)
   let lst = s:ChangeList(s:AddSpacesToList(a:nls))
   let mxl = len(a:nls)     " 行数
-  let fl = mxl - a:pl -1   " カーソル行と全行数の差（from left position)
+  let fl = mxl - a:pl   " カーソル行と全行数の差（from left position)
   let lim = a:w/2 - 4      " 最大で表示できる行数から4を引いたもの (cursor limit)
   if fl > lim
-    let scrl = fl - lim  " 右へスクロールさせる行数
+    let scrl = fl - lim " 右へスクロールさせる行数
   else
     let scrl = 0
   endif
-  let msc = mxl - a:w/2 + 3   " スクロールできる最大数
+  let msc = mxl - lim   " スクロールできる最大数
   if msc < 0
     let msc = 0
   else
@@ -46,53 +46,6 @@ function! s:ShowTate(lst,w,pl,px,scrl,msc)
   call setline(2,fin)
   let [cy,cx] = s:CursorSet(fin,a:pl,a:px,a:scrl,a:msc)
   return [fin,cy,cx]
-endfunction
-
-function! s:MoveCursor()
-  let fin = s:fin
-  let lst = s:lst
-  let w = s:w
-  let cy = s:cy
-  let cx = s:cx
-  let pl = s:pl
-  let px = s:px
-  let scrl = s:scrl
-  let msc = s:msc
-  let cpos = getcurpos('.')
-  let ncy = cpos[1]
-  let ncx = cpos[2]
-  if cy>ncy
-    let px = px - 1
-    if ncy==1
-      let px = 1
-    endif
-    let [cy,cx] = s:CursorSet(fin,pl,px,scrl,msc)
-  elseif cy<ncy
-    let px = px + 1
-    if ncy==s:h
-      let px = px - 1
-    endif
-    let [cy,cx] = s:CursorSet(fin,pl,px,scrl,msc) 
-  elseif cx>ncx
-    if ncx > 2
-      let pl = pl + 1
-    endif
-    if scrl>0 && ncx<10
-      let scrl = scrl - 1
-      let [fin,cy,cx] = s:ShowTate(lst,w,pl,px,scrl,msc)
-    else
-      let [cy,cx] = s:CursorSet(fin,pl,px,scrl,msc)
-    endif
-  elseif cx<ncx
-    let pl = pl - 1
-    if msc>scrl && ncx>(col('$')-10)
-      let scrl = scrl + 1
-      let [fin,cy,cx] = s:ShowTate(lst,w,pl,px,scrl,msc)
-    else
-      let [cy,cx] = s:CursorSet(fin,pl,px,scrl,msc)
-    endif
-  endif
-  return [fin,cy,cx,pl,px,scrl]
 endfunction
 
 function! s:GetGyou(str,pl)
@@ -133,7 +86,7 @@ function! s:FitElmToWindow(el,mc,wi,sc)
     let ebl = '' 
     let c = 0
     let n = 0
-    while n < a:wi/2-1 + a:sc
+    while n < a:wi/2-2 + a:sc
       let ch = a:el[c+1]
       if ch==' '                      " ここでスペースを得るといふことはバイト数1のキャラが
         let ch = a:el[c:c+1]          " 前にあるといふこと 
@@ -154,7 +107,7 @@ function! s:FitElmToWindow(el,mc,wi,sc)
       endif
     endwhile
   elseif a:mc < a:wi
-    let ebl = repeat(' ',(a:wi-a:mc)) . a:el
+    let ebl = repeat(' ',(a:wi-a:mc-4)) . a:el
   else 
     let ebl = a:el
   endif
@@ -262,18 +215,16 @@ function! s:ConvPos(h,pl,px,oln)
   return [y,x]
 endfunction
 
-function! s:UpdateText()
-  let fin = s:fin
-  let bf = s:bf
-  let pl = s:pl
-  let px = s:px
-  let oln = s:oln
-  let w = s:w
-  let h = s:h
+function! s:UpdateText(fin,bf,pl,px,oln,w,h)
+  let fin = a:fin
+  let bf = a:bf
+  let pl = a:pl
+  let px = a:px
+  let oln = a:oln
   let icr = px!=line('.')-1   " 改行が入力されたかどうか
-  let [y,x] = s:ConvPos(h,pl,px,oln)
+  let [y,x] = s:ConvPos(a:h,pl,px,oln)
   if icr
-    call setline(h," ")
+    call setline(a:h," ")
     let tl = bf[y-1]
     let heads = slice(tl,0,x-1)
     let tail = slice(tl,x-1) 
@@ -327,9 +278,54 @@ function! s:UpdateText()
       let x = x + df
     endif
   endif
-  let [nls,lst,fin,cy,cx,pl,px,scrl,msc,oln] = s:ChangeToTate(bf,x,y,w,h)
+  let [nls,lst,fin,cy,cx,pl,px,scrl,msc,oln] = s:ChangeToTate(bf,x,y,a:w,a:h)
   call setline(1,"pl=" . pl . " px=" . px . " cy=" . cy . " cx=" . cx . " s=" . scrl . " m=" . msc)
   return [bf,lst,fin,pl,px,cy,cx,scrl,msc,oln]
+endfunction
+
+function! s:MoveCursor(fin,lst,w,h,cy,cx,pl,px,scrl,msc)
+  let fin = a:fin
+  let cpos = getcurpos('.')
+  let cy = a:cy
+  let cx = a:cx
+  let pl = a:pl
+  let px = a:px
+  let scrl = a:scrl
+  let ncy = cpos[1]
+  let ncx = cpos[2]
+  if cy > ncy
+    let px = px - 1
+    if ncy==1
+      let px = 1
+    endif
+    let [cy,cx] = s:CursorSet(fin,pl,px,scrl,a:msc)
+  elseif cy < ncy
+    let px = px + 1
+    if ncy==a:h
+      let px = px - 1
+    endif
+    let [cy,cx] = s:CursorSet(fin,pl,px,scrl,a:msc) 
+  elseif cx > ncx
+    if ncx > 2
+      let pl = pl + 1
+    endif
+    if scrl > 0 && ncx < 10
+      let scrl = scrl - 1
+      let [fin,cy,cx] = s:ShowTate(a:lst,a:w,pl,px,scrl,a:msc)
+    else
+      let [cy,cx] = s:CursorSet(fin,pl,px,scrl,a:msc)
+    endif
+  elseif cx < ncx
+    let pl = pl - 1
+    if a:msc > scrl && ncx > (col('$')-10)
+      let scrl +=  1
+      let [fin,cy,cx] = s:ShowTate(a:lst,a:w,pl,px,scrl,a:msc)
+    else
+      let [cy,cx] = s:CursorSet(fin,pl,px,scrl,a:msc)
+    endif
+  endif
+  call setline(1,"pl=" . pl . " px=" . px . " cy=" . cy . " cx=" . cx . " s=" . scrl . " m=" . a:msc)
+  return [fin,cy,cx,pl,px,scrl]
 endfunction
 
 function! tate#TateStart()
@@ -348,11 +344,12 @@ function! tate#TateStart()
     let bf = getline(1,line("$"))  " 全行のリストを取得
     let s:bf = mapnew(bf,"(v:val) . ' '")  " リストの最後尾にスペースを追加
     bn!
+    let b:abc = 1
     let [s:nls,s:lst,s:fin,s:cy,s:cx,s:pl,s:px,s:scrl,s:msc,s:oln] = s:ChangeToTate(s:bf,x,y,s:w,s:h)
     autocmd!
     autocmd InsertLeave * call feedkeys("\<right>",'n')
-    autocmd TextChangedI * let [s:bf,s:lst,s:fin,s:pl,s:px,s:cy,s:cx,s:scrl,s:msc,s:oln] = s:UpdateText()
-    autocmd CursorMoved * let [s:fin,s:cy,s:cx,s:pl,s:px,s:scrl] = s:MoveCursor()
+    autocmd TextChangedI * let [s:bf,s:lst,s:fin,s:pl,s:px,s:cy,s:cx,s:scrl,s:msc,s:oln] = s:UpdateText(s:fin,s:bf,s:pl,s:px,s:oln,s:w,s:h)
+    autocmd CursorMoved * let [s:fin,s:cy,s:cx,s:pl,s:px,s:scrl] = s:MoveCursor(s:fin,s:lst,s:w,s:h,s:cy,s:cx,s:pl,s:px,s:scrl,s:msc)
   augroup END
 endfunction
 
