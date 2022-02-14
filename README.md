@@ -1,7 +1,7 @@
 # tate.vim
 virtical insert in vim
 
-for VIM version 8.2 later
+for VIM version 8.23 later
 
 start virtical mode with 't' and Enter in normal mode  
 
