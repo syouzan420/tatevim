@@ -210,17 +210,29 @@ endfunction
 " wi  : displaying line width (string character width)
 " scrl: not-displayed character length of each element of the list (tls)
 function! s:FitToWindow(ls,wi,scrl)
-  let mcs = len(a:ls[0])  " the first element length (bytes) of the list (tls)
+  let mcs = s:DisplayableLength(a:ls[0]) 
   let lst = copy(a:ls)
   call map(lst,"s:FitElmToWindow(v:val,mcs,a:wi,a:scrl)")
   call map(lst,"'  ' . v:val")  " add 2 spaces at the first of each element of the list
-  let l = len(lst)
   let lst = lst + [repeat(' ',a:wi-2)]
   return lst
 endfunction
 " OUTPUT
 " lst : list of each element displayed now in Vertical Mode (fls)
 " --------------------------------------------------------------------------------
+
+function! s:DisplayableLength(str)
+  let i = 0
+  let l = 0
+  let mc = strchars(a:str) 
+  while i < mc 
+    let ch = slice(a:str,i,i+1)
+    let dw = strdisplaywidth(ch)
+    let l = l + dw
+    let i += 1
+  endwhile
+  return l
+endfunction
 
 " FIT ELM TO WINOW ---------------------------------------------------------------
 " INPUTS
