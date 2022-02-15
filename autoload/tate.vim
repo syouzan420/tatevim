@@ -2,127 +2,47 @@ scriptencoding utf-8
 " AUTHOR: yokoP <teruyokoP@gmail.com>
 " MAINTAINER: yokoP
 " License: This file is placed in the public domain.
-function! s:ChangeToTate(bf,x,y,w,h)
-  let [nls,pl,px,oln] = s:MakeNewList(a:bf,a:h-2,a:x,a:y)
-  let [lst,fin,cy,cx,scrl,msc] = s:ConvertList(nls,pl,px,a:w)
-  return [nls,lst,fin,cy,cx,pl,px,scrl,msc,oln]
-endfunction
 
-" the list taken is -- nls which is wrapped lined text list from original text
-" 最初のリスト（元のバッファの行をリストにしたもの）を表示高さ分の長さで分割したリストを取る
-" それに必要ならばスペースを加へて 全リスト要素を同じ長さ（キャラクタ數）にし
-" すべての要素の先頭からそれぞれ取って合はせ できた要素を逆から並べて lst をつくる
-function! s:ConvertList(nls,pl,px,w)
-  let lst = s:ChangeList(s:AddSpacesToList(a:nls))
-  let mxl = len(a:nls)     " 行数
-  let fl = mxl - a:pl   " カーソル行と全行数の差（from left position)
-  let lim = a:w/2 - 4      " 最大で表示できる行数から4を引いたもの (cursor limit)
-  if fl > lim
-    let scrl = fl - lim " 右へスクロールさせる行数
-  else
-    let scrl = 0
-  endif
-  let msc = mxl - lim   " スクロールできる最大数
-  if msc < 0
-    let msc = 0
-  else
-    let msc = msc
-  endif
-  let [fin,cy,cx] = s:ShowTate(lst,a:w,a:pl,a:px,scrl,msc)
-  return [lst,fin,cy,cx,scrl,msc]
+" CHANGE TO TATE -------------------------------------------------
+" INPUTS
+" bls: original buffer data list
+" y : index of the list (bls)
+" x : index of the element of the list (bls)
+" w : window width (max string display width of the window)
+" h : window height (max line of the window)
+function! s:ChangeToTate(bls,x,y,w,h)
+  let [nls,pl,px,oln] = s:MakeNewList(a:bls,a:h-2,a:x,a:y)
+  let [tls,fls,cy,cx,scrl,msc] = s:ConvertList(nls,pl,px,a:w)
+  return [nls,tls,fls,cy,cx,pl,px,scrl,msc,oln]
 endfunction
+" OUTPUTS
+" nls: list which length is limited to (h-2) (max line displayed)
+" tls: list of each element corresponds to the displayable line
+" fls: list of each element displayed now in Vertical Mode
+" cy : cursor position y (Vertical Mode)
+" cx : cursor position x (Vertical Mode)
+" pl : index of the list (nls) corresponds to the cursor position
+" px : index of the element of the list (nls) corresponds to the cursor position
+" scrl: not-displayed character length of each element of the list (tls)
+" msc : the difference between the max total character length of each line of
+"          the list (tln) AND the display character length (when former is bigger than latter) 
+" oln : list of each number (element) is correspons to the line number of the
+"           original list (bls) (this list's length is the same as the nls list)
+" --------------------------------------------------------------------------------
 
-function! s:CursorSet(fin,pl,px,scrl,msc)
-  let co = s:GetGyou(a:fin[a:px-1],a:pl-a:msc+a:scrl)
-  let cy = a:px + 1
-  call cursor(cy,1)
-  let cx = col('$') - co
-  call cursor(cy,cx)
-  return [cy,cx]
-endfunction
-
-function! s:ShowTate(lst,w,pl,px,scrl,msc)
-  let fin = s:FitToWindow(a:lst,a:w-4,a:scrl)
-  call setline(2,fin)
-  let [cy,cx] = s:CursorSet(fin,a:pl,a:px,a:scrl,a:msc)
-  return [fin,cy,cx]
-endfunction
-
-function! s:GetGyou(str,pl)
-  let sl = strchars(a:str)
-  let co = 0
-  let n = 0
-  while n < a:pl
-    let ch = slice(a:str,sl-1,sl)
-    let n = n + 1
-    if ch==' '
-      let tch = slice(a:str,sl-2,sl-1)  " スペースの前のキャラクタを得る
-      let co = co + 1 + len(tch)        " そのキャラのバイト数に對應して長さを變へる
-      let sl = sl - 2
-    else
-      let co = co + 3       " displaywidth が2のキャラは そのままバイト数を加へる
-      let sl = sl - 1
-    endif
-  endwhile
-  return co
-endfunction
-
-function! s:CreateField(h)
-  enew
-  let ls = repeat([' '],a:h-1)
-  call append(1,ls)
-  bp!
-endfunction
-
-function! s:FitToWindow(ls,wi,sc)
-  let mcs = len(a:ls[0])
-  let res = mapnew(a:ls,"s:FitElmToWindow(v:val,mcs,a:wi,a:sc)")
-  call map(res,"'  ' . v:val")
-  return res
-endfunction
-
-function! s:FitElmToWindow(el,mc,wi,sc)
-  if a:mc > a:wi
-    let ebl = '' 
-    let c = 0
-    let n = 0
-    while n < a:wi/2-2 + a:sc
-      let ch = a:el[c+1]
-      if ch==' '                      " ここでスペースを得るといふことはバイト数1のキャラが
-        let ch = a:el[c:c+1]          " 前にあるといふこと 
-        let c = c + 2
-      else
-        let ch = a:el[c:c+2]          " さうでなければバイト数3のキャラなのだが
-        let dw = strdisplaywidth(ch)  " 表示幅が1のものは スペースを加へて
-        if dw == 1                    " 表示幅2にしないと 正しく表示されない
-          let ch = ch . ' '           " この場合スペース分のバイト数1も加へてやる必要がある
-          let c = c + 4
-        else
-          let c = c + 3
-        endif
-      endif
-      let n = n + 1
-      if n > a:sc
-        let ebl = ebl . ch
-      endif
-    endwhile
-  elseif a:mc < a:wi
-    let ebl = repeat(' ',(a:wi-a:mc-4)) . a:el
-  else 
-    let ebl = a:el
-  endif
-  return ebl
-endfunction
-
+" MAKE NEW LIST ------------------------------------------------------------------
+" INPUTS
+" ls : list (bls) that is the original buffer list
+" hi : limit height which is the limit length of the output list (nls)
+" y : index of the list (bls)
+" x : index of the element of the list (bls)
 function! s:MakeNewList(ls,hi,x,y)
-  "長さが hi を越える要素は その長さの要素と 残りの要素に分割して
-  "リストを置換する
   let c = 0
   let pl = a:y
   let plf = pl
   let px = a:x
   let nls = []
-  let oln = []      " original line number 元の行番号をもつリスト
+  let oln = []              " original line number 
   let m = len(a:ls)
   while c < m
     let el = a:ls[c]
@@ -146,26 +66,99 @@ function! s:MakeNewList(ls,hi,x,y)
   endwhile
   return [nls,pl,px,oln]
 endfunction
+" OUTPUTS
+" nls: list which length is limited to (h-2) (max line displayed)
+" pl : index of the list (nls) corresponds to the cursor position
+" px : index of the element of the list (nls) corresponds to the cursor position
+" oln : list of each number (element) is correspons to the line number of the
+"           original list (bls) (this list's length is the same as the nls list)
+" --------------------------------------------------------------------------------
 
+" CONVERT LIST -------------------------------------------------------------------
+" INPUTS
+" nls: list which length is limited to (h-2) (max line displayed)
+" pl : index of the list (nls) corresponds to the cursor position
+" px : index of the element of the list (nls) corresponds to the cursor position
+" w : window width (max string display width of the window)
+function! s:ConvertList(nls,pl,px,w)
+  let tls = s:ChangeList(s:AddSpacesToList(a:nls))
+  let mxl = len(a:nls)     " length of the list (max line numbers) 
+  let fl = mxl - a:pl      " number of lines from left to the cursor position
+  let lim = a:w/2 - 4      " the display character length
+  if fl > lim
+    let scrl = fl - lim   
+  else
+    let scrl = 0
+  endif
+  let msc = mxl - lim 
+  if msc < 0
+    let msc = 0
+  else
+    let msc = msc
+  endif
+  let [fls,cy,cx] = s:ShowTate(tls,a:w,a:pl,a:px,scrl,msc)
+  return [tls,fls,cy,cx,scrl,msc]
+endfunction
+" OUTPUTS
+" tls: list of each element corresponds to the displayable line
+" fls: list of each element displayed now in Vertical Mode
+" cy : cursor position y (Vertical Mode)
+" cx : cursor position x (Vertical Mode)
+" scrl: not-displayed character length of each element of the list (tls)
+" msc : the difference between the mxl and lim (when mxl is bigger than lim) 
+" --------------------------------------------------------------------------------  
+
+" ADD SPACES TO LIST--------------------------------------------------------------
+" INPUT
+" ls: list (nls) which elements has different length
+function! s:AddSpacesToList(ls)
+  let lst = copy(a:ls)
+  call map(lst,"strchars(v:val)")
+  let mxl = max(lst)
+  call map(a:ls,"s:AddSpaces(v:val,mxl)")
+  return a:ls 
+endfunction
+" OUTPUT
+" a:ls : elements has same length (max length of the input list)
+" --------------------------------------------------------------------------------
+
+" ADD SPACES ---------------------------------------------------------------------
+" INPUTS
+" str : string (element of the list (nls))
+" mxl : max length of the list (nls)
+function! s:AddSpaces(str,mxl)
+  let l = strchars(a:str)
+  let spn = a:mxl - l
+  let sp = repeat(' ',spn)  " space code 32 
+  return (a:str . sp)
+endfunction
+" OUTPUT
+" a:str . sp : new element of the list which is the same length with mxl
+" --------------------------------------------------------------------------------
+
+" CHANGE LIST --------------------------------------------------------------------
+" INPUT
+" ls : list of the same length elements version of the nls
 function! s:ChangeList(ls)
   let c = 0
-  let nls = []
+  let tls = []
   let m = strchars(a:ls[0])
   while c < m 
-    let nls = add(nls,join(reverse(mapnew(a:ls,"s:ChangeChar(strcharpart(v:val,c,1))")),''))
+    let lst = copy(a:ls)
+    let tls = add(tls,join(reverse(map(lst,"s:ChangeChar(strcharpart(v:val,c,1))")),''))
     let c = c + 1
   endwhile
-  return nls
+  return tls
 endfunction
+" OUTPUT
+" tls: list of each element corresponds to the displayable line
+" -------------------------------------------------------------------------------- 
 
-" キャラクターが表示幅1ならば スペースを追加して 強制的に幅2とする
-" さらに 縦に見せるべきキャラクター （括弧など）は 縦書き用に変換する
-" ちなみに この時 1バイトのキャラ（イコールや括弧など)が3バイトのキャラに変換されたりする
-" しかも その3バイトキャラは表示幅が1なので スペースを後に加へなければならない
-" このことをふまへて s:FitElmToWindow関数 s:GetGyou関数の
-" 擧動を考へなければならなかった
+" CHANGE CHAR --------------------------------------------------------------------
+" INPUT
+" ch : character of the element of the list (tls)
 function! s:ChangeChar(ch)
-  let dw = strdisplaywidth(a:ch)
+  let dw = strdisplaywidth(a:ch) " display width of the character
   let cha = a:ch
   if dw == 1
     let cha = cha . ' '
@@ -173,33 +166,165 @@ function! s:ChangeChar(ch)
   if cha =='ー'
     let cha = '｜'
   elseif cha=='( ' || cha=='（'
-     let cha = '⏜ '              " 23dc (これらは 挿入モードで Ctrl-v u に續いて入力)
+     let cha = '⏜ '              " 23dc (in insert mode Ctrl-v u and input this HEX)
   elseif cha==') ' || cha=='）'
      let cha = '⏝ '              " 23dd
   elseif cha=='= '
-     let cha = '꯫ '              " 2225  または a831 abeb 2016 (abebを使用) 
+     let cha = '꯫ '              " 2225 or a831, abeb, 2016 (using abeb) 
   elseif cha=='。'
-    let cha = '︒'              " fe12
+    let cha = '︒'               " fe12
   elseif cha=='、'
-    let cha = '︑'              " fe11
+    let cha = '︑'               " fe11
   endif
   return cha 
 endfunction
+" OUTPUT
+" cha : new string for the input character
+"       character display width = 1              => add space 
+"       character is not for vertical expression => change character
+" --------------------------------------------------------------------------------
 
-function! s:AddSpacesToList(ls)
-  let cs = mapnew(a:ls,"strchars(v:val)")
-  let mxc = max(cs)
-  let rsb = mapnew(a:ls,"s:AddSpaces(v:val,mxc)")
-  return rsb
+" SHOW TATE ----------------------------------------------------------------------
+" INPUTS
+" tls: list of each element corresponds to the displayable line
+" w : window width (max string display width of the window)
+" pl : index of the list (nls) corresponds to the cursor position
+" px : index of the element of the list (nls) corresponds to the cursor position
+" scrl: not-displayed character length of each element of the list (tls)
+" msc : the difference between the mxl and lim (when mxl is bigger than lim) 
+function! s:ShowTate(tls,w,pl,px,scrl,msc)
+  let fls = s:FitToWindow(a:tls,a:w-4,a:scrl)
+  call setline(2,fls)
+  let [cy,cx] = s:CursorSet(fls,a:pl,a:px,a:scrl,a:msc)
+  return [fls,cy,cx]
 endfunction
+" OUTPUTS
+" fls: list of each element displayed now in Vertical Mode
+" cy : cursor position y (Vertical Mode)
+" cx : cursor position x (Vertical Mode)
+" --------------------------------------------------------------------------------
 
-function! s:AddSpaces(s,m)
-  let l = strchars(a:s)
-  let spn = a:m - l
-  let sp = repeat(' ',spn)  " このスペースは文字コード32 
-  return (a:s . sp)
+" FIT TO WINDOW ------------------------------------------------------------------
+" INPUTS
+" ls  : list of each element corresponds to the displayable line (tls)
+" wi  : displaying line width (string character width)
+" scrl: not-displayed character length of each element of the list (tls)
+function! s:FitToWindow(ls,wi,scrl)
+  let mcs = len(a:ls[0])  " the first element length (bytes) of the list (tls)
+  let lst = copy(a:ls)
+  call map(lst,"s:FitElmToWindow(v:val,mcs,a:wi,a:scrl)")
+  call map(lst,"'  ' . v:val")  " add 2 spaces at the first of each element of the list
+  return lst
 endfunction
+" OUTPUT
+" lst : list of each element displayed now in Vertical Mode (fls)
+" --------------------------------------------------------------------------------
 
+" FIT ELM TO WINOW ---------------------------------------------------------------
+" INPUTS
+" el : element of the list (tls)
+" wi  : displaying line width (string character width)
+" scrl: not-displayed character length of each element of the list (tls)
+function! s:FitElmToWindow(el,mcs,wi,scrl)
+  if a:mcs > a:wi
+    let nel = '' 
+    let c = 0
+    let n = 0
+    while n < a:wi/2-2 + a:scrl
+      let ch = a:el[c+1]
+      if ch==' '                      " ここでスペースを得るといふことはバイト数1のキャラが
+        let ch = a:el[c:c+1]          " 前にあるといふこと 
+        let c = c + 2
+      else
+        let ch = a:el[c:c+2]          " さうでなければバイト数3のキャラなのだが
+        let dw = strdisplaywidth(ch)  " 表示幅が1のものは スペースを加へて
+        if dw == 1                    " 表示幅2にしないと 正しく表示されない
+          let ch = ch . ' '           " この場合スペース分のバイト数1も加へてやる必要がある
+          let c = c + 4
+        else
+          let c = c + 3
+        endif
+      endif
+      let n = n + 1
+      if n > a:scrl
+        let nel = nel . ch
+      endif
+    endwhile
+  elseif a:mcs < a:wi
+    let nel = repeat(' ',(a:wi-a:mcs-4)) . a:el
+  else 
+    let nel = a:el
+  endif
+  return nel 
+endfunction
+" OUTPUT
+" nel : new element with length fit to the window column size 
+" --------------------------------------------------------------------------------
+
+" CURSOR SET ---------------------------------------------------------------------
+" INPUTS
+" fls: list of each element displayed now in Vertical Mode
+" pl : index of the list (nls) corresponds to the cursor position
+" px : index of the element of the list (nls) corresponds to the cursor position
+" scrl: not-displayed character length of each element of the list (tls)
+" msc : the difference between the mxl and lim (when mxl is bigger than lim) 
+function! s:CursorSet(fls,pl,px,scrl,msc)
+  let co = s:GetGyou(a:fls[a:px-1],a:pl-a:msc+a:scrl)
+  let cy = a:px + 1
+  call cursor(cy,1)
+  let cx = col('$') - co
+  call cursor(cy,cx)
+  return [cy,cx]
+endfunction
+" OUTPUTS
+" cy : cursor position y (Vertical Mode)
+" cx : cursor position x (Vertical Mode)
+" --------------------------------------------------------------------------------
+
+" GET GYOU
+" INPUTS
+" str : each element of the list (fls) which elements are displayable lines
+" dlp : displayed vertical line position (from right)
+function! s:GetGyou(str,dlp)
+  let sl = strchars(a:str)
+  let co = 0
+  let n = 0
+  while n < a:dlp
+    let ch = slice(a:str,sl-1,sl)
+    let n = n + 1
+    if ch==' '
+      let tch = slice(a:str,sl-2,sl-1)  " character in front of the space 
+      let co = co + 1 + len(tch)        " add character bytes and the byte of the space 
+      let sl = sl - 2
+    else
+      let co = co + 3       " add 3 bytes when displaywidth is 2 
+      let sl = sl - 1
+    endif
+  endwhile
+  return co
+endfunction
+" OUTPUT
+" co : column length from the right limit to the cursor position  
+" --------------------------------------------------------------------------------
+
+" CREATE FIELD ------------------------------------------------------------------
+" INPUT
+" h : window height (max line of the window)
+function! s:CreateField(h)
+  enew
+  let ls = repeat([' '],a:h-1)
+  call append(1,ls)
+  bp!
+endfunction
+" create a buffer which is empty (with new lines that can change later)
+" --------------------------------------------------------------------------------
+
+" CONV POS -----------------------------------------------------------------------
+" INPUTS
+" h : window height (max line of the window)
+" pl : index of the list (nls) corresponds to the cursor position
+" px : index of the element of the list (nls) corresponds to the cursor position
+" oln : list of line numbers of the original list (bls) 
 function! s:ConvPos(h,pl,px,oln)
   let ml = a:h - 2  " max length
   let y = s:oln[a:pl-1]
@@ -214,10 +339,14 @@ function! s:ConvPos(h,pl,px,oln)
   endwhile
   return [y,x]
 endfunction
+" OUTPUTS
+" y : index of the list (bls) 
+" x : index of the element of the list (bls)
+" --------------------------------------------------------------------------------
 
-function! s:UpdateText(fin,bf,pl,px,oln,w,h)
-  let fin = a:fin
-  let bf = a:bf
+function! s:UpdateText(fls,bls,pl,px,oln,w,h)
+  let fls = a:fls
+  let bls = a:bls
   let pl = a:pl
   let px = a:px
   let oln = a:oln
@@ -225,36 +354,36 @@ function! s:UpdateText(fin,bf,pl,px,oln,w,h)
   let [y,x] = s:ConvPos(a:h,pl,px,oln)
   if icr
     call setline(a:h," ")
-    let tl = bf[y-1]
+    let tl = bls[y-1]
     let heads = slice(tl,0,x-1)
     let tail = slice(tl,x-1) 
     if y==1
-      let bf = [heads,tail] + bf[y:]
+      let bls = [heads,tail] + bls[y:]
     else
-      let bf = bf[0:y-2] + [heads,tail] + bf[y:]
+      let bls = bls[0:y-2] + [heads,tail] + bls[y:]
     endif
     let x = 1
     let y = y + 1
   else
-    let ol = fin[px-1]
+    let ol = fls[px-1]
     let nl = getline('.')
     let df = strchars(nl)-strchars(ol)  " 挿入された文字の長さ
     let ibs = df < 0    " バックスペースが押されたかどうか
     if ibs
-      let tl = bf[y-1]
+      let tl = bls[y-1]
       if x==1
         if y==1
-          let bf = [" "]
+          let bls = [" "]
         else
-          let bf = bf[0:y-2] + bf[y:]
-          let x = strchars(bf[y-2]) 
+          let bls = bls[0:y-2] + bls[y:]
+          let x = strchars(bls[y-2]) 
           let y = y - 1
         endif
       else
         let heads = slice(tl,0,x-2)
         let tail = slice(tl,x-1) 
         let tnl = heads . tail
-        let bf = bf[0:y-2] + [tnl] + bf[y:]
+        let bls = bls[0:y-2] + [tnl] + bls[y:]
         let x = x - 1 
       endif
     else
@@ -266,25 +395,25 @@ function! s:UpdateText(fin,bf,pl,px,oln,w,h)
         endwhile
         let str = slice(nl,i,i+df)  " 挿入された文字列を得る
       endif
-      let tl = bf[y-1]
+      let tl = bls[y-1]
       let heads = slice(tl,0,x-1)
       let tail = slice(tl,x-1) 
       let tnl = heads . str . tail " 新しい縦の行
       if y==1
-        let bf = [tnl] + bf[y:]
+        let bls = [tnl] + bls[y:]
       else
-        let bf = bf[0:y-2] + [tnl] + bf[y:]
+        let bls = bls[0:y-2] + [tnl] + bls[y:]
       endif
       let x = x + df
     endif
   endif
-  let [nls,lst,fin,cy,cx,pl,px,scrl,msc,oln] = s:ChangeToTate(bf,x,y,a:w,a:h)
+  let [nls,tls,fls,cy,cx,pl,px,scrl,msc,oln] = s:ChangeToTate(bls,x,y,a:w,a:h)
   call setline(1,"pl=" . pl . " px=" . px . " cy=" . cy . " cx=" . cx . " s=" . scrl . " m=" . msc)
-  return [bf,lst,fin,pl,px,cy,cx,scrl,msc,oln]
+  return [bls,tls,fls,pl,px,cy,cx,scrl,msc,oln]
 endfunction
 
-function! s:MoveCursor(fin,lst,w,h,cy,cx,pl,px,scrl,msc)
-  let fin = a:fin
+function! s:MoveCursor(fls,tls,w,h,cy,cx,pl,px,scrl,msc)
+  let fls = a:fls
   let cpos = getcurpos('.')
   let cy = a:cy
   let cx = a:cx
@@ -298,34 +427,34 @@ function! s:MoveCursor(fin,lst,w,h,cy,cx,pl,px,scrl,msc)
     if ncy==1
       let px = 1
     endif
-    let [cy,cx] = s:CursorSet(fin,pl,px,scrl,a:msc)
+    let [cy,cx] = s:CursorSet(fls,pl,px,scrl,a:msc)
   elseif cy < ncy
     let px = px + 1
     if ncy==a:h
       let px = px - 1
     endif
-    let [cy,cx] = s:CursorSet(fin,pl,px,scrl,a:msc) 
+    let [cy,cx] = s:CursorSet(fls,pl,px,scrl,a:msc) 
   elseif cx > ncx
     if ncx > 2
       let pl = pl + 1
     endif
     if scrl > 0 && ncx < 10
       let scrl = scrl - 1
-      let [fin,cy,cx] = s:ShowTate(a:lst,a:w,pl,px,scrl,a:msc)
+      let [fls,cy,cx] = s:ShowTate(a:tls,a:w,pl,px,scrl,a:msc)
     else
-      let [cy,cx] = s:CursorSet(fin,pl,px,scrl,a:msc)
+      let [cy,cx] = s:CursorSet(fls,pl,px,scrl,a:msc)
     endif
   elseif cx < ncx
     let pl = pl - 1
     if a:msc > scrl && ncx > (col('$')-10)
       let scrl +=  1
-      let [fin,cy,cx] = s:ShowTate(a:lst,a:w,pl,px,scrl,a:msc)
+      let [fls,cy,cx] = s:ShowTate(a:tls,a:w,pl,px,scrl,a:msc)
     else
-      let [cy,cx] = s:CursorSet(fin,pl,px,scrl,a:msc)
+      let [cy,cx] = s:CursorSet(fls,pl,px,scrl,a:msc)
     endif
   endif
   call setline(1,"pl=" . pl . " px=" . px . " cy=" . cy . " cx=" . cx . " s=" . scrl . " m=" . a:msc)
-  return [fin,cy,cx,pl,px,scrl]
+  return [fls,cy,cx,pl,px,scrl]
 endfunction
 
 function! tate#TateStart()
@@ -341,15 +470,14 @@ function! tate#TateStart()
     let y = line('.')       " the current line which is on the cursor 
     let x = charcol('.')    " 現在のカーソルの位置（横方向)までにあるキャラクタ数
     call s:CreateField(s:h) " 新しいバッファを作成し空の行を作って元のバッファにもどる
-    let bf = getline(1,line("$"))  " 全行のリストを取得
-    let s:bf = mapnew(bf,"(v:val) . ' '")  " リストの最後尾にスペースを追加
+    let s:bls = getline(1,line("$"))  " 全行のリストを取得
+    call map(s:bls,"(v:val) . ' '")  " リストの最後尾にスペースを追加
     bn!
-    let b:abc = 1
-    let [s:nls,s:lst,s:fin,s:cy,s:cx,s:pl,s:px,s:scrl,s:msc,s:oln] = s:ChangeToTate(s:bf,x,y,s:w,s:h)
+    let [s:nls,s:tls,s:fls,s:cy,s:cx,s:pl,s:px,s:scrl,s:msc,s:oln] = s:ChangeToTate(s:bls,x,y,s:w,s:h)
     autocmd!
     autocmd InsertLeave * call feedkeys("\<right>",'n')
-    autocmd TextChangedI * let [s:bf,s:lst,s:fin,s:pl,s:px,s:cy,s:cx,s:scrl,s:msc,s:oln] = s:UpdateText(s:fin,s:bf,s:pl,s:px,s:oln,s:w,s:h)
-    autocmd CursorMoved * let [s:fin,s:cy,s:cx,s:pl,s:px,s:scrl] = s:MoveCursor(s:fin,s:lst,s:w,s:h,s:cy,s:cx,s:pl,s:px,s:scrl,s:msc)
+    autocmd TextChangedI * let [s:bls,s:tls,s:fls,s:pl,s:px,s:cy,s:cx,s:scrl,s:msc,s:oln] = s:UpdateText(s:fls,s:bls,s:pl,s:px,s:oln,s:w,s:h)
+    autocmd CursorMoved * let [s:fls,s:cy,s:cx,s:pl,s:px,s:scrl] = s:MoveCursor(s:fls,s:tls,s:w,s:h,s:cy,s:cx,s:pl,s:px,s:scrl,s:msc)
   augroup END
 endfunction
 
@@ -361,7 +489,7 @@ function! tate#TateChange()
   " clear the buffer
   normal 1G
   normal dG 
-  call append(0,s:bf)     " append new data
+  call append(0,s:bls)     " append new data
   nnoremap t :Tate
 endfunction
 
