@@ -214,6 +214,8 @@ function! s:FitToWindow(ls,wi,scrl)
   let lst = copy(a:ls)
   call map(lst,"s:FitElmToWindow(v:val,mcs,a:wi,a:scrl)")
   call map(lst,"'  ' . v:val")  " add 2 spaces at the first of each element of the list
+  let l = len(lst)
+  let lst = lst + [repeat(' ',a:wi-2)]
   return lst
 endfunction
 " OUTPUT
@@ -353,7 +355,7 @@ function! s:UpdateText(fls,bls,pl,px,oln,w,h)
   let icr = px!=line('.')-1   " 改行が入力されたかどうか
   let [y,x] = s:ConvPos(a:h,pl,px,oln)
   if icr
-    call setline(a:h," ")
+    call setline(len(fls)+2," ")
     let tl = bls[y-1]
     let heads = slice(tl,0,x-1)
     let tail = slice(tl,x-1) 
@@ -376,14 +378,22 @@ function! s:UpdateText(fls,bls,pl,px,oln,w,h)
           let bls = [" "]
         else
           let bls = bls[0:y-2] + bls[y:]
-          let x = strchars(bls[y-2]) 
+          let x = strchars(bls[y-2]) + 1 
           let y = y - 1
         endif
       else
         let heads = slice(tl,0,x-2)
         let tail = slice(tl,x-1) 
         let tnl = heads . tail
-        let bls = bls[0:y-2] + [tnl] + bls[y:]
+        if y==1
+          if x==2
+            let bls = [" "] + bls[y:]
+          else
+            let bls = [tnl] + bls[y:]
+          endif
+        else
+          let bls = bls[0:y-2] + [tnl] + bls[y:]
+        endif
         let x = x - 1 
       endif
     else
