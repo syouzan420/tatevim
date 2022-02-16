@@ -210,16 +210,34 @@ endfunction
 " wi  : displaying line width (string character width)
 " scrl: not-displayed character length of each element of the list (tls)
 function! s:FitToWindow(ls,wi,scrl)
-  let mcs = len(a:ls[0])  " the first element length (bytes) of the list (tls)
+  let mcs = s:DisplayableLength(a:ls[0]) 
   let lst = copy(a:ls)
   call map(lst,"s:FitElmToWindow(v:val,mcs,a:wi,a:scrl)")
   call map(lst,"'  ' . v:val")  " add 2 spaces at the first of each element of the list
-  let l = len(lst)
   let lst = lst + [repeat(' ',a:wi-2)]
   return lst
 endfunction
 " OUTPUT
 " lst : list of each element displayed now in Vertical Mode (fls)
+" --------------------------------------------------------------------------------
+
+" DISPLAYABLE LENGTH -------------------------------------------------------------
+" INPUT
+" str : string
+function! s:DisplayableLength(str)
+  let i = 0
+  let l = 0
+  let mc = strchars(a:str) 
+  while i < mc 
+    let ch = slice(a:str,i,i+1)
+    let dw = strdisplaywidth(ch)
+    let l = l + dw
+    let i += 1
+  endwhile
+  return l
+endfunction
+" OUTPUT
+" l : sum of the display width
 " --------------------------------------------------------------------------------
 
 " FIT ELM TO WINOW ---------------------------------------------------------------
@@ -329,10 +347,10 @@ endfunction
 " oln : list of line numbers of the original list (bls) 
 function! s:ConvPos(h,pl,px,oln)
   let ml = a:h - 2  " max length
-  let y = s:oln[a:pl-1]
+  let y = a:oln[a:pl-1]
   let i = 1
   let x = a:px  
-  while s:oln[a:pl-1-i]==y && (a:pl-i)>0 
+  while a:oln[a:pl-1-i]==y && (a:pl-i)>0 
     let x = x + ml
     let i = i + 1
     if (a:pl-1-i)<0
@@ -483,11 +501,11 @@ function! s:TateStart()
     let s:bls = getline(1,line("$"))  " 全行のリストを取得
     call map(s:bls,"(v:val) . ' '")  " リストの最後尾にスペースを追加
     bn!
-    let [s:nls,s:tls,s:fls,s:cy,s:cx,s:pl,s:px,s:scrl,s:msc,s:oln] = s:ChangeToTate(s:bls,x,y,s:w,s:h)
+    let [b:nls,b:tls,b:fls,b:cy,b:cx,b:pl,b:px,b:scrl,b:msc,b:oln] = s:ChangeToTate(s:bls,x,y,s:w,s:h)
     autocmd!
     autocmd InsertLeave * call feedkeys("\<right>",'n')
-    autocmd TextChangedI * let [s:bls,s:tls,s:fls,s:pl,s:px,s:cy,s:cx,s:scrl,s:msc,s:oln] = s:UpdateText(s:fls,s:bls,s:pl,s:px,s:oln,s:w,s:h)
-    autocmd CursorMoved * let [s:fls,s:cy,s:cx,s:pl,s:px,s:scrl] = s:MoveCursor(s:fls,s:tls,s:w,s:h,s:cy,s:cx,s:pl,s:px,s:scrl,s:msc)
+    autocmd TextChangedI * let [s:bls,b:tls,b:fls,b:pl,b:px,b:cy,b:cx,b:scrl,b:msc,b:oln] = s:UpdateText(b:fls,s:bls,b:pl,b:px,b:oln,s:w,s:h)
+    autocmd CursorMoved * let [b:fls,b:cy,b:cx,b:pl,b:px,b:scrl] = s:MoveCursor(b:fls,b:tls,s:w,s:h,b:cy,b:cx,b:pl,b:px,b:scrl,b:msc)
   augroup END
 endfunction
 
@@ -500,6 +518,9 @@ function! s:TateChange()
   normal 1G
   normal dG 
   call append(0,s:bls)     " append new data
+  unlet s:bls
+  unlet s:w
+  unlet s:h
   nnoremap t :Tate
 endfunction
 
@@ -508,6 +529,9 @@ function! s:TateEnd()
     autocmd!
   augroup END
   bd!
+  unlet s:bls
+  unlet s:w
+  unlet s:h
   nnoremap t :Tate
 endfunction
 
