@@ -370,7 +370,7 @@ function! s:UpdateText(fls,bls,pl,px,oln,w,h)
   let pl = a:pl
   let px = a:px
   let oln = a:oln
-  let icr = px!=line('.')-1   " 改行が入力されたかどうか
+  let icr = px!=line('.')-1             " whether <CR> is entered or not
   let [y,x] = s:ConvPos(a:h,pl,px,oln)
   if icr
     call setline(len(fls)+2," ")
@@ -387,8 +387,8 @@ function! s:UpdateText(fls,bls,pl,px,oln,w,h)
   else
     let ol = fls[px-1]
     let nl = getline('.')
-    let df = strchars(nl)-strchars(ol)  " 挿入された文字の長さ
-    let ibs = df < 0    " バックスペースが押されたかどうか
+    let df = strchars(nl)-strchars(ol)  " character length of the input
+    let ibs = df < 0                    " whether <BS> is entered or not 
     if ibs
       let tl = bls[y-1]
       if x==1
@@ -421,12 +421,12 @@ function! s:UpdateText(fls,bls,pl,px,oln,w,h)
         while slice(ol,i,i+1)==slice(nl,i,i+1)
           let i += 1  
         endwhile
-        let str = slice(nl,i,i+df)  " 挿入された文字列を得る
+        let str = slice(nl,i,i+df)      " input string 
       endif
       let tl = bls[y-1]
       let heads = slice(tl,0,x-1)
       let tail = slice(tl,x-1) 
-      let tnl = heads . str . tail " 新しい縦の行
+      let tnl = heads . str . tail      " new vertical line 
       if y==1
         let bls = [tnl] + bls[y:]
       else
@@ -436,7 +436,8 @@ function! s:UpdateText(fls,bls,pl,px,oln,w,h)
     endif
   endif
   let [nls,tls,fls,cy,cx,pl,px,scrl,msc,oln] = s:ChangeToTate(bls,x,y,a:w,a:h)
-  call setline(1,"pl=" . pl . " px=" . px . " cy=" . cy . " cx=" . cx . " s=" . scrl . " m=" . msc)
+  let status = "pl=".pl." px=".px." cy=".cy." cx=".cx." s=".scrl." m=".msc
+  call setline(1,status)
   return [bls,tls,fls,pl,px,cy,cx,scrl,msc,oln]
 endfunction
 
@@ -450,19 +451,19 @@ function! s:MoveCursor(fls,tls,w,h,cy,cx,pl,px,scrl,msc)
   let scrl = a:scrl
   let ncy = cpos[1]
   let ncx = cpos[2]
-  if cy > ncy
+  if cy > ncy                   " cursor move up
     let px = px - 1
     if ncy==1
       let px = 1
     endif
     let [cy,cx] = s:CursorSet(fls,pl,px,scrl,a:msc)
-  elseif cy < ncy
+  elseif cy < ncy               " cursor move down
     let px = px + 1
     if ncy==a:h
       let px = px - 1
     endif
     let [cy,cx] = s:CursorSet(fls,pl,px,scrl,a:msc) 
-  elseif cx > ncx
+  elseif cx > ncx               " cursor move left
     if ncx > 2
       let pl = pl + 1
     endif
@@ -472,7 +473,7 @@ function! s:MoveCursor(fls,tls,w,h,cy,cx,pl,px,scrl,msc)
     else
       let [cy,cx] = s:CursorSet(fls,pl,px,scrl,a:msc)
     endif
-  elseif cx < ncx
+  elseif cx < ncx               " cursor move right
     let pl = pl - 1
     if a:msc > scrl && ncx > (col('$')-10)
       let scrl +=  1
@@ -481,27 +482,29 @@ function! s:MoveCursor(fls,tls,w,h,cy,cx,pl,px,scrl,msc)
       let [cy,cx] = s:CursorSet(fls,pl,px,scrl,a:msc)
     endif
   endif
-  call setline(1,"pl=" . pl . " px=" . px . " cy=" . cy . " cx=" . cx . " s=" . scrl . " m=" . a:msc)
+  let status = "pl=".pl." px=".px." cy=".cy." cx=".cx." s=".scrl." m=".a:msc
+  call setline(1,status)
   return [fls,cy,cx,pl,px,scrl]
 endfunction
 
 function! tate#TateStart()
   let s:h = winheight('%')  " height of the window 
   let s:w = winwidth('%')   " height of the window (some of the string display width) 
+  " unmap t key and define q key and w key for command :Tateq and :Tatec
+  nunmap t
+  nnoremap q :Tateq
+  nnoremap w :Tatec
+  write                   " write the current buffer to the file 
+  set nofoldenable        " set off the script fold
+  let y = line('.')       " the current line which is on the cursor 
+  let x = charcol('.')    " character index of the line where the cursor is exist 
+  " create new buffer, make empty lines and return to the original buffer 
+  call s:CreateField(s:h) 
+  let s:bls = getline(1,line("$"))  " set all lines of the original buffer to a list 
+  call map(s:bls,"(v:val) . ' '")   " add space to all elements of the list 
+  bn!                               " move to the buffer created for vertical input
+  let [b:nls,b:tls,b:fls,b:cy,b:cx,b:pl,b:px,b:scrl,b:msc,b:oln] = s:ChangeToTate(s:bls,x,y,s:w,s:h)
   augroup Tate 
-    " unmap t key and define q key and w key for command :Tateq and :Tatec
-    nunmap t
-    nnoremap q :Tateq
-    nnoremap w :Tatec
-    write                   " write the current buffer to the file 
-    set nofoldenable        " set off the script fold
-    let y = line('.')       " the current line which is on the cursor 
-    let x = charcol('.')    " 現在のカーソルの位置（横方向)までにあるキャラクタ数
-    call s:CreateField(s:h) " 新しいバッファを作成し空の行を作って元のバッファにもどる
-    let s:bls = getline(1,line("$"))  " 全行のリストを取得
-    call map(s:bls,"(v:val) . ' '")  " リストの最後尾にスペースを追加
-    bn!
-    let [b:nls,b:tls,b:fls,b:cy,b:cx,b:pl,b:px,b:scrl,b:msc,b:oln] = s:ChangeToTate(s:bls,x,y,s:w,s:h)
     autocmd!
     autocmd InsertLeave * call feedkeys("\<right>",'n')
     autocmd TextChangedI * let [s:bls,b:tls,b:fls,b:pl,b:px,b:cy,b:cx,b:scrl,b:msc,b:oln] = s:UpdateText(b:fls,s:bls,b:pl,b:px,b:oln,s:w,s:h)
