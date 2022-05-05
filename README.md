@@ -19,5 +19,8 @@ t に續いて Enter で 縦書きモードに移行し
 保存したい場合は ノーマルモードで wに續き Enterを押し 横書きモードに戻してから 通常通り保存します  
 最新のVIMでないと charcol関数がないことによりエラーが出ます  
 このプラグインを使ふ場合は VIMを最新にすることをお勧めします  
-プラグインの使用は tate.vim を フォルダ .vim の plugin ディレクトリに入れてください  
+プラグインを入れるには   
+autoloadフォルダ および pluginフォルダ にある tate.vim ファイルを それぞれ  
+ローカルにある .vim フォルダ内の autoloadフォルダ および pluginフォルダに入れるか  
+[Dein.vim](https://kaworu.jpn.org/vim/Vim%E3%81%A8NeoVim%E3%81%AE%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%83%9E%E3%83%8D%E3%83%BC%E3%82%B8%E3%83%A3Dein.vim) などの プラグイン管理を使用し インストールしてください
 ![Screenshot from 2022-02-13 13-57-06](https://user-images.githubusercontent.com/12661196/153739536-d664fd0b-9aa9-4e8b-950c-cec34119c189.png)
