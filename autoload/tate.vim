@@ -10,9 +10,9 @@ scriptencoding utf-8
 " x : index of the element of the list (bls)
 " w : window width (max string display width of the window)
 " h : window height (max line of the window)
-function! s:ChangeToTate(bls,x,y,w,h)
+function! s:ChangeToTate(bls,x,y,scrl,w,h)
   let [nls,pl,px,oln] = s:MakeNewList(a:bls,a:h-2,a:x,a:y)
-  let [tls,fls,cy,cx,scrl,msc] = s:ConvertList(nls,pl,px,a:w)
+  let [tls,fls,cy,cx,scrl,msc] = s:ConvertList(nls,pl,px,a:scrl,a:w)
   return [nls,tls,fls,cy,cx,pl,px,scrl,msc,oln]
 endfunction
 " OUTPUTS
@@ -80,15 +80,19 @@ endfunction
 " pl : index of the list (nls) corresponds to the cursor position
 " px : index of the element of the list (nls) corresponds to the cursor position
 " w : window width (max string display width of the window)
-function! s:ConvertList(nls,pl,px,w)
+function! s:ConvertList(nls,pl,px,scrl,w)
   let tls = s:ChangeList(s:AddSpacesToList(a:nls))
   let mxl = len(a:nls)     " length of the list (max line numbers) 
   let fl = mxl - a:pl      " number of lines from left to the cursor position
   let lim = a:w/2 - 4      " the display character length
-  if fl > lim
-    let scrl = fl - lim   
+  if a:scrl == 0
+    if fl > lim
+      let scrl = fl - lim   
+    else
+      let scrl = 0
+    endif
   else
-    let scrl = 0
+    let scrl = a:scrl
   endif
   let msc = mxl - lim 
   if msc < 0
@@ -175,6 +179,10 @@ function! s:ChangeChar(ch)
     let cha = '︒'               " fe12
   elseif cha=='、'
     let cha = '︑'               " fe11
+  elseif cha=='：'
+    let cha = '‥ '
+  elseif cha=='「'
+    let cha = '⅂ '
   endif
   return cha 
 endfunction
@@ -364,11 +372,12 @@ endfunction
 " x : index of the element of the list (bls)
 " --------------------------------------------------------------------------------
 
-function! s:UpdateText(fls,bls,pl,px,oln,w,h)
+function! s:UpdateText(fls,bls,pl,px,scrl,oln,w,h)
   let fls = a:fls
   let bls = a:bls
   let pl = a:pl
   let px = a:px
+  let scrl = a:scrl
   let oln = a:oln
   let icr = px!=line('.')-1             " whether <CR> is entered or not
   let [y,x] = s:ConvPos(a:h,pl,px,oln)
@@ -435,7 +444,7 @@ function! s:UpdateText(fls,bls,pl,px,oln,w,h)
       let x = x + df
     endif
   endif
-  let [nls,tls,fls,cy,cx,pl,px,scrl,msc,oln] = s:ChangeToTate(bls,x,y,a:w,a:h)
+  let [nls,tls,fls,cy,cx,pl,px,scrl,msc,oln] = s:ChangeToTate(bls,x,y,scrl,a:w,a:h)
   let status = "pl=".pl." px=".px." cy=".cy." cx=".cx." s=".scrl." m=".msc
   call setline(1,status)
   return [bls,tls,fls,pl,px,cy,cx,scrl,msc,oln]
@@ -503,11 +512,11 @@ function! tate#TateStart()
   let s:bls = getline(1,line("$"))  " set all lines of the original buffer to a list 
   call map(s:bls,"(v:val) . ' '")   " add space to all elements of the list 
   bn!                               " move to the buffer created for vertical input
-  let [b:nls,b:tls,b:fls,b:cy,b:cx,b:pl,b:px,b:scrl,b:msc,b:oln] = s:ChangeToTate(s:bls,x,y,s:w,s:h)
+  let [b:nls,b:tls,b:fls,b:cy,b:cx,b:pl,b:px,b:scrl,b:msc,b:oln] = s:ChangeToTate(s:bls,x,y,0,s:w,s:h)
   augroup Tate 
     autocmd!
     autocmd InsertLeave * call feedkeys("\<right>",'n')
-    autocmd TextChangedI * let [s:bls,b:tls,b:fls,b:pl,b:px,b:cy,b:cx,b:scrl,b:msc,b:oln] = s:UpdateText(b:fls,s:bls,b:pl,b:px,b:oln,s:w,s:h)
+    autocmd TextChangedI * let [s:bls,b:tls,b:fls,b:pl,b:px,b:cy,b:cx,b:scrl,b:msc,b:oln] = s:UpdateText(b:fls,s:bls,b:pl,b:px,b:scrl,b:oln,s:w,s:h)
     autocmd CursorMoved * let [b:fls,b:cy,b:cx,b:pl,b:px,b:scrl] = s:MoveCursor(b:fls,b:tls,s:w,s:h,b:cy,b:cx,b:pl,b:px,b:scrl,b:msc)
   augroup END
 endfunction
