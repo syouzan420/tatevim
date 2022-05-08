@@ -11,4 +11,3 @@ let g:loaded_tate = 1
 command! Tate call tate#TateStart()
 command! Tateq call tate#TateEnd()
 command! Tatec call tate#TateChange()
-nnoremap t :Tate
