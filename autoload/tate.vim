@@ -499,10 +499,9 @@ endfunction
 function! tate#TateStart()
   let s:h = winheight('%')  " height of the window 
   let s:w = winwidth('%')   " height of the window (some of the string display width) 
-  " unmap t key and define q key and w key for command :Tateq and :Tatec
-  nunmap t
-  nnoremap q :Tateq
-  nnoremap w :Tatec
+  " define q key and w key for command :Tateq and :Tatec
+  nnoremap <buffer> q :Tateq
+  nnoremap <buffer> w :Tatec
   write                   " write the current buffer to the file 
   set nofoldenable        " set off the script fold
   let y = line('.')       " the current line which is on the cursor 
@@ -533,7 +532,6 @@ function! tate#TateChange()
   unlet s:bls
   unlet s:w
   unlet s:h
-  nnoremap t :Tate
 endfunction
 
 function! tate#TateEnd()
@@ -544,5 +542,4 @@ function! tate#TateEnd()
   unlet s:bls
   unlet s:w
   unlet s:h
-  nnoremap t :Tate
 endfunction
