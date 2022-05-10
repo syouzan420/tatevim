@@ -500,8 +500,8 @@ function! tate#TateStart()
   let s:h = winheight('%')  " height of the window 
   let s:w = winwidth('%')   " height of the window (some of the string display width) 
   " define q key and w key for command :Tateq and :Tatec
-  nnoremap <buffer> q :Tateq
-  nnoremap <buffer> w :Tatec
+  command! Tateq call TateEnd()
+  command! Tatec call TateChange()
   write                   " write the current buffer to the file 
   set nofoldenable        " set off the script fold
   let l:y = line('.')       " the current line which is on the cursor 
@@ -511,6 +511,8 @@ function! tate#TateStart()
   let s:bls = getline(1,line("$"))  " set all lines of the original buffer to a list 
   call map(s:bls,"(v:val) . ' '")   " add space to all elements of the list 
   bn!                               " move to the buffer created for vertical input
+  nnoremap <buffer> q :Tateq
+  nnoremap <buffer> w :Tatec
   let [b:nls,b:tls,b:fls,b:cy,b:cx,b:pl,b:px,b:scrl,b:msc,b:oln] = s:ChangeToTate(s:bls,l:x,l:y,0,s:w,s:h)
   augroup Tate 
     autocmd!
@@ -520,7 +522,7 @@ function! tate#TateStart()
   augroup END
 endfunction
 
-function! tate#TateChange()
+function! TateChange()
   augroup Tate 
     autocmd!
   augroup END
@@ -529,17 +531,22 @@ function! tate#TateChange()
   normal 1G
   normal dG 
   call append(0,s:bls)     " append new data
+  delcommand Tateq
+  delcommand Tatec
   unlet s:bls
   unlet s:w
   unlet s:h
 endfunction
 
-function! tate#TateEnd()
+function! TateEnd()
   augroup Tate 
     autocmd!
   augroup END
   bd!
+  delcommand Tateq
+  delcommand Tatec
   unlet s:bls
   unlet s:w
   unlet s:h
+  mapclear
 endfunction
