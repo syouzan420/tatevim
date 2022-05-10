@@ -498,7 +498,7 @@ endfunction
 
 function! tate#TateStart()
   let s:h = winheight('%')  " height of the window 
-  let s:w = winwidth('%')   " height of the window (some of the string display width) 
+  let s:w = winwidth('%')   " width of the window 
   " define q key and w key for command :Tateq and :Tatec
   command! Tateq call TateEnd()
   command! Tatec call TateChange()
