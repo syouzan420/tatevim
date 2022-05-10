@@ -179,10 +179,10 @@ function! s:ChangeChar(ch)
     let cha = '︒'               " fe12
   elseif cha=='、'
     let cha = '︑'               " fe11
-  elseif cha=='：'
-    let cha = '‥ '
-  elseif cha=='「'
-    let cha = '⅂ '
+  "elseif cha=='：'
+  "  let cha = '‥ '
+  "elseif cha=='「'
+  "  let cha = '⅂ '
   endif
   return cha 
 endfunction
@@ -504,14 +504,14 @@ function! tate#TateStart()
   nnoremap <buffer> w :Tatec
   write                   " write the current buffer to the file 
   set nofoldenable        " set off the script fold
-  let y = line('.')       " the current line which is on the cursor 
-  let x = charcol('.')    " character index of the line where the cursor is exist 
+  let l:y = line('.')       " the current line which is on the cursor 
+  let l:x = charcol('.')    " character index of the line where the cursor is exist 
   " create new buffer, make empty lines and return to the original buffer 
   call s:CreateField(s:h) 
   let s:bls = getline(1,line("$"))  " set all lines of the original buffer to a list 
   call map(s:bls,"(v:val) . ' '")   " add space to all elements of the list 
   bn!                               " move to the buffer created for vertical input
-  let [b:nls,b:tls,b:fls,b:cy,b:cx,b:pl,b:px,b:scrl,b:msc,b:oln] = s:ChangeToTate(s:bls,x,y,0,s:w,s:h)
+  let [b:nls,b:tls,b:fls,b:cy,b:cx,b:pl,b:px,b:scrl,b:msc,b:oln] = s:ChangeToTate(s:bls,l:x,l:y,0,s:w,s:h)
   augroup Tate 
     autocmd!
     autocmd InsertLeave * call feedkeys("\<right>",'n')
