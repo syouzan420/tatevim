@@ -1,1 +1,67 @@
+*tate.txt* Vertical Edit Manager	
 
+Version: 1.0
+Author:  yokoP <syouzanponkikki@yahoo.co.jp>
+License: MIT license
+
+==============================================================================
+CONTENTS 						*tate-contents*
+
+Introduction		|tate-introduction|
+Usage			|tate-usage|
+Install			|tate-install|
+Interface		|tate-interface|
+  COMMANDS 		  |tate-commands|
+  KEY-MAPPINGS  |tate-key-mappings|
+
+
+==============================================================================
+INTRODUCTION						*tate-introduction*
+
+*tatevim* is the vertical edit manager for vim. 
+
+==============================================================================
+USAGE							*tate-usage*
+
+Run this command to edit vertically 
+>
+	:Tate
+<
+
+==============================================================================
+INSTALL							*tate-install*
+
+Requirements:
+* Vim 8.2+ 
+
+put autoload/tate.vim into your autoload folder and
+put plugin/tate.vim into your plugin folder
+
+or
+
+use plugin manager like "dein"
+
+
+==============================================================================
+INTERFACE						*tate-interface*
+
+------------------------------------------------------------------------------
+COMMANDS						*tate-commands*
+
+:Tate					  		*:Tate*
+		Save Current Buffer and Change to Vertical Mode
+
+------------------------------------------------------------------------------
+KEY-MAPPINGS				*tate-key-mappings*
+
+w                   *tate-list-w*
+    Enable under the Vertical Mode
+    Change Original Buffer Data and Back to the Original Mode
+    (Not Writting to a File)
+
+q   
+    Enable under the Vertical Mode
+    Quit Vertical Mode and Go Back to the Original Buffer 
+    Changes Not Saved
+
+==============================================================================
