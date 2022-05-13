@@ -501,7 +501,6 @@ function! tate#TateStart()
   let s:w = winwidth('%')   " width of the window 
   command! Tateq call TateEnd()
   command! Tatec call TateChange()
-  write                   " write the current buffer to the file 
   set nofoldenable        " set off the script fold
   let l:y = line('.')       " the current line which is on the cursor 
   let l:x = charcol('.')    " character index of the line where the cursor is exist 
