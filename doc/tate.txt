@@ -49,7 +49,7 @@ INTERFACE						*tate-interface*
 COMMANDS						*tate-commands*
 
 :Tate					  		*:Tate*
-		Save Current Buffer and Change to Vertical Mode
+		Change to Vertical Mode
 
 ------------------------------------------------------------------------------
 KEY-MAPPINGS				*tate-key-mappings*
