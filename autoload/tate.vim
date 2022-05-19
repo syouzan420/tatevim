@@ -223,7 +223,7 @@ function! s:FitToWindow(ls, wi, scrl)
   let mcs = s:DisplayableLength(a:ls[0]) 
   let lst = copy(a:ls)
   call map(lst, "s:FitElmToWindow(v:val, mcs, a:wi, a:scrl)")
-  call map(lst,"'  ' . v:val")  " add 2 spaces at the first of each element of the list
+  call map(lst, "'  ' . v:val")  " add 2 spaces at the first of each element of the list
   let lst = lst + [repeat(' ', a:wi - 2)]
   return lst
 endfunction
