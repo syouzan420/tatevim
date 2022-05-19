@@ -239,7 +239,7 @@ function! s:DisplayableLength(str)
   let l = 0
   let mc = strchars(a:str) 
   while i < mc 
-    let ch = slice(a:str, i, i+1)
+    let ch = slice(a:str, i, i + 1)
     let dw = strdisplaywidth(ch)
     let l = l + dw
     let i += 1
