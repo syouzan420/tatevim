@@ -49,9 +49,9 @@ function! s:MakeNewList(ls, hi, x, y)
     let el = a:ls[c]
     let l = strchars(el)
     while l > a:hi
-      if c+1 < plf
+      if c + 1 < plf
         let pl = pl + 1
-      elseif (c+1 == plf) && (px > a:hi)
+      elseif (c + 1 == plf) && (px > a:hi)
         let pl = pl + 1
         let px = px - a:hi
       endif
@@ -438,6 +438,10 @@ function! s:UpdateText(fls, bls, pl, px, scrl, oln, w, h)
       endif
       let tl = bls[y - 1]
       let heads = slice(tl, 0, x - 1)
+      let lnl = strchars(tl)
+      if lnl < x
+        let str = repeat(' ', x - lnl - 1) . str
+      endif
       let tail = slice(tl, x - 1) 
       let tnl = heads . str . tail      " new vertical line 
       if y == 1
