@@ -5,113 +5,90 @@ scriptencoding utf-8
 
 " CHANGE TO TATE -------------------------------------------------
 " INPUTS
-" bls: original buffer data list
 " x : index of the element of the list (bls)
 " y : index of the list (bls)
-" scrl: not-displayed character length of each element of the list (tls)
-" w : window width (max string display width of the window)
-" h : window height (max line of the window)
-function! s:ChangeToTate(bls, x, y, scrl, w, h)
-  let [nls, pl, px, oln] = s:MakeNewList(a:bls, a:h - 2, a:x, a:y)
-  let [tls, fls, cy, cx, scrl, msc] = s:ConvertList(nls, pl, px, a:scrl, a:w)
-  return [nls, tls, fls, cy, cx, pl, px, scrl, msc, oln]
+" USING
+" b:h : window height (max line of the window)
+function! s:ChangeToTate(x, y)
+  call s:MakeNewList(b:h - 2, a:x, a:y)
+  call s:ConvertList()
 endfunction
-" OUTPUTS
-" nls: list which length is limited to (h-2) (max line displayed)
-" tls: list of each element corresponds to the displayable line
-" fls: list of each element displayed now in Vertical Mode
-" cy : cursor position y (Vertical Mode)
-" cx : cursor position x (Vertical Mode)
-" pl : index of the list (nls) corresponds to the cursor position
-" px : index of the element of the list (nls) corresponds to the cursor position
-" scrl: not-displayed character length of each element of the list (tls)
-" msc : the difference between the max total character length of each line of
-"          the list (tln) AND the display character length (when former is bigger than latter) 
-" oln : list of each number (element) is correspons to the line number of the
-"           original list (bls) (this list's length is the same as the nls list)
 " --------------------------------------------------------------------------------
 
 " MAKE NEW LIST ------------------------------------------------------------------
 " INPUTS
-" ls : list (bls) that is the original buffer list
 " hi : limit height which is the limit length of the output list (nls)
 " y : index of the list (bls)
 " x : index of the element of the list (bls)
-function! s:MakeNewList(ls, hi, x, y)
+" USING
+" b:bls : list (bls) that is the original buffer list
+function! s:MakeNewList(hi, x, y)
   let c = 0
-  let pl = a:y
-  let plf = pl
-  let px = a:x
-  let nls = []
-  let oln = []              " original line number 
-  let m = len(a:ls)
+  let b:pl = a:y
+  let plf = b:pl
+  let b:px = a:x
+  let b:nls = []
+  let b:oln = []              " original line number 
+  let m = len(b:bls)
   while c < m
-    let el = a:ls[c]
+    let el = b:bls[c]
     let l = strchars(el)
     while l > a:hi
-      if c + 1 < plf
-        let pl = pl + 1
-      elseif (c + 1 == plf) && (px > a:hi)
-        let pl = pl + 1
-        let px = px - a:hi
+      if c+1 < plf
+        let b:pl = b:pl + 1
+      elseif (c+1 == plf) && (b:px > a:hi)
+        let b:pl = b:pl + 1
+        let b:px = b:px - a:hi
       endif
       let fst = slice(el, 0, a:hi)
       let el = slice(el, a:hi)
-      let nls = nls + [fst]
-      let oln = oln + [c + 1]
+      let b:nls = b:nls + [fst]
+      let b:oln = b:oln + [c + 1]
       let l = strchars(el)
     endwhile
-    let nls = nls + [el]
-    let oln = oln + [c + 1]
+    let b:nls = b:nls + [el]
+    let b:oln = b:oln + [c + 1]
     let c = c + 1
   endwhile
-  return [nls, pl, px, oln]
 endfunction
-" OUTPUTS
-" nls: list which length is limited to (h-2) (max line displayed)
-" pl : index of the list (nls) corresponds to the cursor position
-" px : index of the element of the list (nls) corresponds to the cursor position
-" oln : list of each number (element) is correspons to the line number of the
+" CHANGED 
+" b:nls: list which length is limited to (h-2) (max line displayed)
+" b:pl : index of the list (nls) corresponds to the cursor position
+" b:px : index of the element of the list (nls) corresponds to the cursor position
+" b:oln : list of each number (element) is correspons to the line number of the
 "           original list (bls) (this list's length is the same as the nls list)
 " --------------------------------------------------------------------------------
 
 " CONVERT LIST -------------------------------------------------------------------
-" INPUTS
-" nls: list which length is limited to (h-2) (max line displayed)
-" pl : index of the list (nls) corresponds to the cursor position
-" px : index of the element of the list (nls) corresponds to the cursor position
-" scrl: not-displayed character length of each element of the list (tls)
-" w : window width (max string display width of the window)
-function! s:ConvertList(nls, pl, px, scrl, w)
-  let tls = s:ChangeList(s:AddSpacesToList(a:nls))
-  let mxl = len(a:nls)     " length of the list (max line numbers) 
-  let fl = mxl - a:pl      " number of lines from left to the cursor position
-  let lim = a:w / 2 - 4      " the display character length
-  if a:scrl == 0
+" USING
+" b:nls: list which length is limited to (h-2) (max line displayed)
+" b:pl : index of the list (nls) corresponds to the cursor position
+" b:px : index of the element of the list (nls) corresponds to the cursor position
+" b:scrl: not-displayed character length of each element of the list (tls)
+" b:w : window width (max string display width of the window)
+function! s:ConvertList()
+  let b:tls = s:ChangeList(s:AddSpacesToList(b:nls))
+  let mxl = len(b:nls)     " length of the list (max line numbers) 
+  let fl = mxl - b:pl      " number of lines from left to the cursor position
+  let lim = b:w / 2 - 4      " the display character length
+  if b:scrl == 0
     if fl > lim
-      let scrl = fl - lim   
-    else
-      let scrl = 0
+      let b:scrl = fl - lim   
     endif
-  else
-    let scrl = a:scrl
   endif
-  let msc = mxl - lim 
-  if msc < 0
-    let msc = 0
-  else
-    let msc = msc
+  let b:msc = mxl - lim 
+  if b:msc < 0
+    let b:msc = 0
   endif
-  let [fls, cy, cx] = s:ShowTate(tls, a:w, a:pl, a:px, scrl, msc)
-  return [tls, fls, cy, cx, scrl, msc]
+  call s:ShowTate()
 endfunction
-" OUTPUTS
-" tls: list of each element corresponds to the displayable line
-" fls: list of each element displayed now in Vertical Mode
-" cy : cursor position y (Vertical Mode)
-" cx : cursor position x (Vertical Mode)
-" scrl: not-displayed character length of each element of the list (tls)
-" msc : the difference between the mxl and lim (when mxl is bigger than lim) 
+" Changed 
+" b:tls: list of each element corresponds to the displayable line
+" b:fls: list of each element displayed now in Vertical Mode
+" b:cy : cursor position y (Vertical Mode)
+" b:cx : cursor position x (Vertical Mode)
+" b:scrl: not-displayed character length of each element of the list (tls)
+" b:msc : the difference between the mxl and lim (when mxl is bigger than lim) 
 " --------------------------------------------------------------------------------  
 
 " ADD SPACES TO LIST--------------------------------------------------------------
@@ -119,13 +96,14 @@ endfunction
 " ls: list (nls) which elements has different length
 function! s:AddSpacesToList(ls)
   let lst = copy(a:ls)
+  let lst2 = copy(a:ls)
   call map(lst, "strchars(v:val)")
   let mxl = max(lst)
-  call map(a:ls, "s:AddSpaces(v:val, mxl)")
-  return a:ls 
+  call map(lst2, "s:AddSpaces(v:val, mxl)")
+  return lst2 
 endfunction
 " OUTPUT
-" a:ls : elements has same length (max length of the input list)
+" lst2 : elements has same length (max length of the input list)
 " --------------------------------------------------------------------------------
 
 " ADD SPACES ---------------------------------------------------------------------
@@ -181,10 +159,6 @@ function! s:ChangeChar(ch)
     let cha = '︒'               " fe12
   elseif cha == '、'
     let cha = '︑'               " fe11
-  "elseif cha == '：'
-  "  let cha = '‥ '
-  "elseif cha == '「'
-  "  let cha = '⅂ '
   endif
   return cha 
 endfunction
@@ -195,40 +169,34 @@ endfunction
 " --------------------------------------------------------------------------------
 
 " SHOW TATE ----------------------------------------------------------------------
-" INPUTS
-" tls: list of each element corresponds to the displayable line
-" w : window width (max string display width of the window)
-" pl : index of the list (nls) corresponds to the cursor position
-" px : index of the element of the list (nls) corresponds to the cursor position
-" scrl: not-displayed character length of each element of the list (tls)
-" msc : the difference between the mxl and lim (when mxl is bigger than lim) 
-function! s:ShowTate(tls, w, pl, px, scrl, msc)
-  let fls = s:FitToWindow(a:tls, a:w - 4, a:scrl)
-  call setline(2, fls)
-  let [cy, cx] = s:CursorSet(fls, a:pl, a:px, a:scrl, a:msc)
-  return [fls, cy, cx]
+" Using 
+" b:w : window width (max string display width of the window)
+function! s:ShowTate()
+  call s:FitToWindow(b:w - 4)
+  call setline(2, b:fls)
+  call s:CursorSet()
 endfunction
-" OUTPUTS
-" fls: list of each element displayed now in Vertical Mode
+" CHANGED 
+" b:fls: list of each element displayed now in Vertical Mode
 " cy : cursor position y (Vertical Mode)
 " cx : cursor position x (Vertical Mode)
 " --------------------------------------------------------------------------------
 
 " FIT TO WINDOW ------------------------------------------------------------------
-" INPUTS
-" ls  : list of each element corresponds to the displayable line (tls)
+" INPUT
 " wi  : displaying line width (string character width)
-" scrl: not-displayed character length of each element of the list (tls)
-function! s:FitToWindow(ls, wi, scrl)
-  let mcs = s:DisplayableLength(a:ls[0]) 
-  let lst = copy(a:ls)
-  call map(lst, "s:FitElmToWindow(v:val, mcs, a:wi, a:scrl)")
+" USING
+" b:tls : list of each element corresponds to the displayable line (tls)
+" b:scrl: not-displayed character length of each element of the list (tls)
+function! s:FitToWindow(wi)
+  let l:mcs = s:DisplayableLength(b:tls[0]) 
+  let lst = copy(b:tls)
+  call map(lst, "s:FitElmToWindow(v:val, l:mcs, a:wi)")
   call map(lst, "'  ' . v:val")  " add 2 spaces at the first of each element of the list
-  let lst = lst + [repeat(' ', a:wi - 2)]
-  return lst
+  let b:fls = lst + [repeat(' ', a:wi - 2)]
 endfunction
-" OUTPUT
-" lst : list of each element displayed now in Vertical Mode (fls)
+" CHANGED
+" b:fls : list of each element displayed now in Vertical Mode (fls)
 " --------------------------------------------------------------------------------
 
 " DISPLAYABLE LENGTH -------------------------------------------------------------
@@ -254,13 +222,14 @@ endfunction
 " INPUTS
 " el : element of the list (tls)
 " wi  : displaying line width (string character width)
-" scrl: not-displayed character length of each element of the list (tls)
-function! s:FitElmToWindow(el, mcs, wi, scrl)
+" USING
+" b:scrl: not-displayed character length of each element of the list (tls)
+function! s:FitElmToWindow(el, mcs, wi)
   if a:mcs > a:wi
     let nel = '' 
     let c = 0
     let n = 0
-    while n < a:wi / 2 - 2 + a:scrl
+    while n < a:wi / 2 - 2 + b:scrl
       let ch = a:el[c + 1]
       if ch == ' '                      " ここでスペースを得るといふことはバイト数1のキャラが
         let ch = a:el[c : c + 1]          " 前にあるといふこと 
@@ -276,7 +245,7 @@ function! s:FitElmToWindow(el, mcs, wi, scrl)
         endif
       endif
       let n = n + 1
-      if n > a:scrl
+      if n > b:scrl
         let nel = nel . ch
       endif
     endwhile
@@ -292,23 +261,22 @@ endfunction
 " --------------------------------------------------------------------------------
 
 " CURSOR SET ---------------------------------------------------------------------
-" INPUTS
-" fls: list of each element displayed now in Vertical Mode
-" pl : index of the list (nls) corresponds to the cursor position
-" px : index of the element of the list (nls) corresponds to the cursor position
-" scrl: not-displayed character length of each element of the list (tls)
-" msc : the difference between the mxl and lim (when mxl is bigger than lim) 
-function! s:CursorSet(fls, pl, px, scrl, msc)
-  let co = s:GetGyou(a:fls[a:px - 1], a:pl - a:msc + a:scrl)
-  let cy = a:px + 1
-  call cursor(cy, 1)
-  let cx = col('$') - co
-  call cursor(cy, cx)
-  return [cy, cx]
+" USING
+" b:fls: list of each element displayed now in Vertical Mode
+" b:pl : index of the list (nls) corresponds to the cursor position
+" b:px : index of the element of the list (nls) corresponds to the cursor position
+" b:scrl: not-displayed character length of each element of the list (tls)
+" b:msc : the difference between the mxl and lim (when mxl is bigger than lim) 
+function! s:CursorSet()
+  let co = s:GetGyou(b:fls[b:px - 1], b:pl - b:msc + b:scrl)
+  let b:cy = b:px + 1
+  call cursor(b:cy, 1)
+  let b:cx = col('$') - co
+  call cursor(b:cy, b:cx)
 endfunction
-" OUTPUTS
-" cy : cursor position y (Vertical Mode)
-" cx : cursor position x (Vertical Mode)
+" CHANGED 
+" b:cy : cursor position y (Vertical Mode)
+" b:cx : cursor position x (Vertical Mode)
 " --------------------------------------------------------------------------------
 
 " GET GYOU
@@ -341,8 +309,8 @@ endfunction
 " INPUT
 " h : window height (max line of the window)
 function! s:CreateField(h)
-  set hidden
-  enew
+  enew!
+  set nofoldenable        " set off the script fold
   set nonumber
   let ls = repeat([' '], a:h - 1)
   call append(1, ls)
@@ -352,20 +320,20 @@ endfunction
 " --------------------------------------------------------------------------------
 
 " CONV POS -----------------------------------------------------------------------
-" INPUTS
-" h : window height (max line of the window)
-" pl : index of the list (nls) corresponds to the cursor position
-" px : index of the element of the list (nls) corresponds to the cursor position
-" oln : list of line numbers of the original list (bls) 
-function! s:ConvPos(h, pl, px, oln)
-  let ml = a:h - 2  " max length
-  let y = a:oln[a:pl - 1]
+" USING
+" b:h : window height (max line of the window)
+" b:pl : index of the list (nls) corresponds to the cursor position
+" b:px : index of the element of the list (nls) corresponds to the cursor position
+" b:oln : list of line numbers of the original list (bls) 
+function! s:ConvPos()
+  let ml = b:h - 2  " max length
+  let y = b:oln[b:pl - 1]
   let i = 1
-  let x = a:px  
-  while a:oln[a:pl - 1 - i] == y && (a:pl - i) > 0 
+  let x = b:px  
+  while b:oln[b:pl - 1 - i] == y && (b:pl - i) > 0 
     let x = x + ml
     let i = i + 1
-    if (a:pl - 1 - i) < 0
+    if (b:pl - 1 - i) < 0
       break
     endif
   endwhile
@@ -376,40 +344,36 @@ endfunction
 " x : index of the element of the list (bls)
 " --------------------------------------------------------------------------------
 
-function! s:UpdateText(fls, bls, pl, px, scrl, oln, w, h)
-  let fls = a:fls
-  let bls = a:bls
-  let pl = a:pl
-  let px = a:px
-  let scrl = a:scrl
-  let oln = a:oln
-  let icr = px != line('.') - 1             " whether <CR> is entered or not
-  let [y, x] = s:ConvPos(a:h, pl, px, oln)
+function! s:UpdateText(bli)
+  let icr = b:px != line('.') - 1             " whether <CR> is entered or not
+  let [y, x] = s:ConvPos()
   if icr
-    call setline(len(fls) + 2, " ")
-    let tl = bls[y - 1]
+    let s:bcr = 1 
+    call setline(len(b:fls) + 2, " ")
+    let tl = b:bls[y - 1]
     let heads = slice(tl, 0, x - 1)
     let tail = slice(tl, x - 1) 
     if y == 1
-      let bls = [heads, tail] + bls[y :]
+      let b:bls = [heads, tail] + b:bls[y :]
     else
-      let bls = bls[0 : y - 2] + [heads, tail] + bls[y :]
+      let b:bls = b:bls[0 : y - 2] + [heads, tail] + b:bls[y :]
     endif
     let x = 1
     let y = y + 1
   else
-    let ol = fls[px - 1]
+    if a:bli == 0
+    let ol = b:fls[b:px - 1]
     let nl = getline('.')
     let df = strchars(nl) - strchars(ol)  " character length of the input
     let ibs = df < 0                    " whether <BS> is entered or not 
     if ibs
-      let tl = bls[y - 1]
+      let tl = b:bls[y - 1]
       if x == 1
         if y == 1
-          let bls = [" "]
+          let b:bls = [" "]
         else
-          let bls = bls[0 : y - 2] + bls[y :]
-          let x = strchars(bls[y - 2]) + 1 
+          let b:bls = b:bls[0 : y - 2] + b:bls[y :]
+          let x = strchars(b:bls[y - 2]) + 1 
           let y = y - 1
         endif
       else
@@ -418,12 +382,12 @@ function! s:UpdateText(fls, bls, pl, px, scrl, oln, w, h)
         let tnl = heads . tail
         if y == 1
           if x == 2
-            let bls = [" "] + bls[y :]
+            let b:bls = [" "] + b:bls[y :]
           else
-            let bls = [tnl] + bls[y :]
+            let b:bls = [tnl] + b:bls[y :]
           endif
         else
-          let bls = bls[0 : y - 2] + [tnl] + bls[y :]
+          let b:bls = b:bls[0 : y - 2] + [tnl] + b:bls[y :]
         endif
         let x = x - 1 
       endif
@@ -436,7 +400,7 @@ function! s:UpdateText(fls, bls, pl, px, scrl, oln, w, h)
         endwhile
         let str = slice(nl, i, i + df)      " input string 
       endif
-      let tl = bls[y - 1]
+      let tl = b:bls[y - 1]
       let heads = slice(tl, 0, x - 1)
       let lnl = strchars(tl)
       if lnl < x
@@ -445,90 +409,84 @@ function! s:UpdateText(fls, bls, pl, px, scrl, oln, w, h)
       let tail = slice(tl, x - 1) 
       let tnl = heads . str . tail      " new vertical line 
       if y == 1
-        let bls = [tnl] + bls[y :]
+        let b:bls = [tnl] + b:bls[y :]
       else
-        let bls = bls[0 : y - 2] + [tnl] + bls[y :]
+        let b:bls = b:bls[0 : y - 2] + [tnl] + b:bls[y :]
       endif
       let x = x + df
     endif
   endif
-  let [nls, tls, fls, cy, cx, pl, px, scrl, msc, oln] = s:ChangeToTate(bls, x, y, scrl, a:w, a:h)
-  let status = "pl=" . pl . " px=" . px . " cy=" . cy . " cx=" . cx . " s=" . scrl . " m=" . msc
+    let s:bcr = 0 
+  endif
+  call s:ChangeToTate(x, y)
+  let status = "pl=" . b:pl . " px=" . b:px . " cy=" . b:cy . " cx=" . b:cx . " s=" . b:scrl . " m=" . b:msc
   call setline(1, status)
-  return [bls, tls, fls, pl, px, cy, cx, scrl, msc, oln]
 endfunction
 
-function! s:MoveCursor(fls, tls, w, h, cy, cx, pl, px, scrl, msc)
-  let fls = a:fls
+function! s:MoveCursor()
   let cpos = getcurpos('.')
-  let cy = a:cy
-  let cx = a:cx
-  let pl = a:pl
-  let px = a:px
-  let scrl = a:scrl
   let ncy = cpos[1]
   let ncx = cpos[2]
-  if cy > ncy                   " cursor move up
-    let px = px - 1
+  if b:cy > ncy                   " cursor move up
+    let b:px = b:px - 1
     if ncy == 1
-      let px = 1
+      let b:px = 1
     endif
-    let [cy, cx] = s:CursorSet(fls, pl, px, scrl, a:msc)
-  elseif cy < ncy               " cursor move down
-    let px = px + 1
-    if ncy == a:h
-      let px = px - 1
+    call s:CursorSet()
+  elseif b:cy < ncy               " cursor move down
+    let b:px = b:px + 1
+    if ncy == b:h
+      let b:px = b:px - 1
     endif
-    let [cy, cx] = s:CursorSet(fls, pl, px, scrl, a:msc) 
-  elseif cx > ncx               " cursor move left
+    call s:CursorSet() 
+  elseif b:cx > ncx               " cursor move left
     if ncx > 2
-      let pl = pl + 1
+      let b:pl = b:pl + 1
     endif
-    if scrl > 0 && ncx < 10
-      let scrl = scrl - 1
-      let [fls, cy, cx] = s:ShowTate(a:tls, a:w, pl, px, scrl, a:msc)
+    if b:scrl > 0 && ncx < 10
+      let b:scrl = b:scrl - 1
+      call s:ShowTate()
     else
-      let [cy, cx] = s:CursorSet(fls, pl, px, scrl, a:msc)
+      call s:CursorSet()
     endif
-  elseif cx < ncx               " cursor move right
-    let pl = pl - 1
-    if a:msc > scrl && ncx > (col('$') - 10)
-      let scrl +=  1
-      let [fls, cy, cx] = s:ShowTate(a:tls, a:w, pl, px, scrl, a:msc)
+  elseif b:cx < ncx               " cursor move right
+    let b:pl = b:pl - 1
+    if b:msc > b:scrl && ncx > (col('$') - 10)
+      let b:scrl +=  1
+      call s:ShowTate()
     else
-      let [cy, cx] = s:CursorSet(fls, pl, px, scrl, a:msc)
+      call s:CursorSet()
     endif
   endif
-  let status = "pl=" . pl . " px=" . px . " cy=" . cy . " cx=" . cx . " s=" . scrl . " m=" . a:msc
+  let status = "pl=" . b:pl . " px=" . b:px . " cy=" . b:cy . " cx=" . b:cx . " s=" . b:scrl . " m=" . b:msc
   call setline(1,status)
-  return [fls, cy, cx, pl, px, scrl]
 endfunction
 
 function! tate#TateStart()
-  let s:h = winheight('%')  " height of the window 
-  let s:w = winwidth('%')   " width of the window 
-  command! Tateq call TateEnd()
-  command! Tatec call TateChange()
-  set nofoldenable        " set off the script fold
+  let l:h = winheight('%')  " height of the window 
+  let l:w = winwidth('%')   " width of the window 
   let l:y = line('.')       " the current line which is on the cursor 
   let l:x = charcol('.')    " character index of the line where the cursor is exist 
   " create new buffer, make empty lines and return to the original buffer 
-  call s:CreateField(s:h) 
-  let s:bls = getline(1, line("$"))  " set all lines of the original buffer to a list 
-  call map(s:bls, "(v:val) . ' '")   " add space to all elements of the list 
+  call s:CreateField(l:h) 
+  let l:bls = getline(1, line("$"))  " set all lines of the original buffer to a list 
+  call map(l:bls, "(v:val) . ' '")   " add space to all elements of the list 
   bn!                               " move to the buffer created for vertical input
+  let [b:bls, b:nls, b:tls, b:fls, b:oln, b:cy, b:cx, b:pl, b:px, b:scrl, b:msc, b:h, b:w, s:bcr] = [l:bls, [], [], [], [], 0, 0, 0, 0, 0, 0, l:h, l:w, 0] 
+  call s:ChangeToTate(l:x, l:y)
+  command! Tateq call TateEnd()
+  command! Tatec call TateChange(b:bls)
   nnoremap <buffer> q :Tateq
   nnoremap <buffer> w :Tatec
-  let [b:nls, b:tls, b:fls, b:cy, b:cx, b:pl, b:px, b:scrl, b:msc, b:oln] = s:ChangeToTate(s:bls, l:x, l:y, 0, s:w, s:h)
   augroup Tate 
     autocmd!
-    autocmd InsertLeave * call feedkeys("\<right>", 'n')
-    autocmd TextChangedI * let [s:bls, b:tls, b:fls, b:pl, b:px, b:cy, b:cx, b:scrl, b:msc, b:oln] = s:UpdateText(b:fls, s:bls, b:pl, b:px, b:scrl, b:oln, s:w, s:h)
-    autocmd CursorMoved * let [b:fls, b:cy, b:cx, b:pl, b:px, b:scrl] = s:MoveCursor(b:fls, b:tls, s:w, s:h, b:cy, b:cx, b:pl, b:px, b:scrl, b:msc)
+    autocmd InsertLeave <buffer> call s:UpdateText(1) 
+    autocmd TextChangedI <buffer> call s:UpdateText(0)
+    autocmd CursorMoved <buffer> call s:MoveCursor()
   augroup END
 endfunction
 
-function! TateChange()
+function! TateChange(bls)
   augroup Tate 
     autocmd!
   augroup END
@@ -536,12 +494,9 @@ function! TateChange()
   " clear the buffer
   normal 1G
   normal dG 
-  call append(0, s:bls)     " append new data
+  call append(0, a:bls)     " append new data
   delcommand Tateq
   delcommand Tatec
-  unlet s:bls
-  unlet s:w
-  unlet s:h
 endfunction
 
 function! TateEnd()
@@ -551,8 +506,5 @@ function! TateEnd()
   bd!
   delcommand Tateq
   delcommand Tatec
-  unlet s:bls
-  unlet s:w
-  unlet s:h
   mapclear
 endfunction
