@@ -71,9 +71,13 @@ function! s:ConvertList()
   let mxl = len(b:nls)     " length of the list (max line numbers) 
   let fl = mxl - b:pl      " number of lines from left to the cursor position
   let lim = b:w / 2 - 4      " the display character length
+  let ex = b:pl
+  if ex > 5
+    let ex = 4
+  endif
   if b:scrl == 0
     if fl > lim
-      let b:scrl = fl - lim   
+      let b:scrl = fl - lim + ex  
     endif
   endif
   let b:msc = mxl - lim 
@@ -312,6 +316,7 @@ function! s:CreateField(h)
   enew!
   set nofoldenable        " set off the script fold
   set nonumber
+  set scrolloff=0
   let ls = repeat([' '], a:h - 1)
   call append(1, ls)
   bp!
@@ -455,6 +460,10 @@ function! s:MoveCursor()
       let b:scrl +=  1
       call s:ShowTate()
     else
+      if b:pl == 0
+        let b:pl = b:pl + 1
+        let b:cx = b:cx + 1
+      endif
       call s:CursorSet()
     endif
   endif
@@ -490,11 +499,13 @@ function! TateChange(bls)
   augroup Tate 
     autocmd!
   augroup END
+  let [y, x] = s:ConvPos()
   bd!                     " return the original buffer
   " clear the buffer
   normal 1G
   normal dG 
   call append(0, a:bls)     " append new data
+  call cursor(y, x)
   delcommand Tateq
   delcommand Tatec
 endfunction
