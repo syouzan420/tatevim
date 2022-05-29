@@ -102,7 +102,7 @@ function! s:AddSpacesToList(ls)
   let lst = copy(a:ls)
   let lst2 = copy(a:ls)
   call map(lst, "strchars(v:val)")
-  let mxl = max(lst)
+  let mxl = b:h - 2 
   call map(lst2, "s:AddSpaces(v:val, mxl)")
   return lst2 
 endfunction
