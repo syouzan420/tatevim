@@ -479,7 +479,7 @@ function! tate#TateStart()
   " create new buffer, make empty lines and return to the original buffer 
   call s:CreateField(l:h) 
   let l:bls = getline(1, line("$"))  " set all lines of the original buffer to a list 
-  call map(l:bls, "(v:val) . ' '")   " add space to all elements of the list 
+  " call map(l:bls, "(v:val) . ' '")   " add space to all elements of the list 
   bn!                               " move to the buffer created for vertical input
   let [b:bls, b:nls, b:tls, b:fls, b:oln, b:cy, b:cx, b:pl, b:px, b:scrl, b:msc, b:h, b:w, s:bcr] = [l:bls, [], [], [], [], 0, 0, 0, 0, 0, 0, l:h, l:w, 0] 
   call s:ChangeToTate(l:x, l:y)
@@ -505,6 +505,8 @@ function! TateChange(bls)
   normal 1G
   normal dG 
   call append(0, a:bls)     " append new data
+  normal G
+  normal dd                 " delete the last line
   call cursor(y, x)
   delcommand Tateq
   delcommand Tatec
