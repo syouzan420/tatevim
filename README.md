@@ -24,3 +24,6 @@ autoloadフォルダ および pluginフォルダ にある tate.vim ファイ�
 ローカルにある .vim フォルダ内の autoloadフォルダ および pluginフォルダに入れるか  
 [Dein.vim](https://kaworu.jpn.org/vim/Vim%E3%81%A8NeoVim%E3%81%AE%E3%83%97%E3%83%A9%E3%82%B0%E3%82%A4%E3%83%B3%E3%83%9E%E3%83%8D%E3%83%BC%E3%82%B8%E3%83%A3Dein.vim) などの プラグイン管理を使用し インストールしてください
 ![Screenshot from 2022-02-13 13-57-06](https://user-images.githubusercontent.com/12661196/153739536-d664fd0b-9aa9-4e8b-950c-cec34119c189.png)
+
+vim9スクリプトで書いた [VerticalVim](https://github.com/syouzan420/VerticalVim/blob/main/plugin/ta.vim) は ぼちぼち更新もしてゐます  
+スクロールも こちらの方が快適なので おすすめです
